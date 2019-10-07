@@ -1,0 +1,15 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+ipdb = "*"
+
+[packages]
+python-decouple = "==3.1"
+flask = "==1.1.1"
+benchmark-tools = {path = ".",editable = true}
+
+[requires]
+python_version = "3.6"
