@@ -9,7 +9,7 @@ Build Image:
   script:
     - rm -r /root/.docker
     - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
-    - /kaniko/executor --context $CI_PROJECT_DIR --skip-tls-verify --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:dev --build-arg SIT_PYPI_USER_VAR=$SIT_PYPI_USER --build-arg SIT_PYPI_PASS_VAR=$SIT_PYPI_PASS --cache=true
+    - /kaniko/executor --context $CI_PROJECT_DIR --skip-tls-verify --dockerfile $CI_PROJECT_DIR/Dockerfile --destination $CI_REGISTRY_IMAGE:latest --build-arg SIT_PYPI_USER_VAR=$SIT_PYPI_USER --build-arg SIT_PYPI_PASS_VAR=$SIT_PYPI_PASS --cache=true
 
 
 test:
