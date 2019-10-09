@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import uuid
 import hashlib
+import requests
 
 
 # this is just a mocked method for running the benchmark
@@ -14,11 +15,16 @@ def make_confs_id(benchmark, target_system):
     return confs_id
 
 
-def run_benchmark(benchmark, target_system):
+def send_results_to_webhook(results, result_webhook):
+    res = requests.post(url=result_webhook, json=results)
+    return res
+
+
+def run_benchmark(benchmark, target_system, result_webhook):
     confs_id = make_confs_id(benchmark, target_system)
     run_id = str(uuid.uuid4())
     benchmark_results = start_benchmark(benchmark, target_system)
-    return {
+    results = {
         'results': benchmark_results,
         'configs': {
             'confs_id': confs_id,
@@ -27,3 +33,5 @@ def run_benchmark(benchmark, target_system):
         },
         'run_id': run_id
     }
+
+    return send_results_to_webhook(results, result_webhook)
