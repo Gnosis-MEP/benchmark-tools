@@ -1,5 +1,5 @@
 import unittest
-# from unittest.mock import patch
+from unittest.mock import patch
 
 from benchmark_tools.controller import controller
 
@@ -9,18 +9,35 @@ class ControllerTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_run_benchmark(self):
+    @patch('benchmark_tools.controller.controller.send_results_to_webhook')
+    @patch('benchmark_tools.controller.controller.start_benchmark')
+    @patch('benchmark_tools.controller.controller.prepare_benchmark_output')
+    def test_run_benchmark_send_results_to_webhook(self, prepare_output_mocked, mocked_start_benchmark, mocked_send_results):
         benchmark = {1: 2}
         target_system = {3: 4}
+        result_webhook = 'https://example.com/set_result/123-abc'
+        # mocked_start_benchmark.return_value = {'some': 'result'}
+        prepare_output_mocked.return_value = {'some': 'result'}
+        controller.run_benchmark(benchmark, target_system, result_webhook)
+        mocked_send_results.assert_called_once_with({'some': 'result'}, 'https://example.com/set_result/123-abc')
 
-        res = controller.run_benchmark(benchmark, target_system)
-        for k in ['results', 'configs', 'run_id']:
-            self.assertIn(k, res)
-        for k in ['benchmark', 'target_system', 'confs_id']:
-            self.assertIn(k, res['configs'])
-
-        self.assertDictEqual(benchmark, res['configs']['benchmark'])
-        self.assertDictEqual(target_system, res['configs']['target_system'])
+    def test_prepare_benchmark_results(self):
+        benchmark = {1: 2}
+        target_system = {3: 4}
+        benchmark_results = {'a': 'b'}
+        run_id = '123-abc'
+        confs_id = '789-abc'
+        res = controller.prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchmark_results)
+        expected = {
+            'results': benchmark_results,
+            'configs': {
+                'confs_id': confs_id,
+                'benchmark': benchmark,
+                'target_system': target_system
+            },
+            'run_id': run_id
+        }
+        self.assertDictEqual(res, expected)
 
     def tearDown(self):
         # os.close(self.db_fd)
