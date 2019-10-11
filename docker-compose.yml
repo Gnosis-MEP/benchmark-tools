@@ -12,7 +12,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./:/tmp
+      - ./:/service
     environment:
       - PYTHONUNBUFFERED=0
       - BENCHMARK_JSON_CONFIG_PATH=${BENCHMARK_JSON_CONFIG_PATH}

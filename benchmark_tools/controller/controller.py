@@ -47,7 +47,11 @@ def prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchma
 def run_benchmark(benchmark, target_system, result_webhook):
     confs_id = make_confs_id(benchmark, target_system)
     run_id = str(uuid.uuid4())
+
+    print('Running benchmark...')
     benchmark_results = start_benchmark(benchmark, target_system)
+    print('Finished benchmark.')
+    print('preparing output')
     results = prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchmark_results)
     # results = {
     #     'results': benchmark_results,
@@ -58,7 +62,7 @@ def run_benchmark(benchmark, target_system, result_webhook):
     #     },
     #     'run_id': run_id
     # }
-
+    print('Sending results to webhook: {results} ->{result_webhook}')
     return send_results_to_webhook(results, result_webhook)
 
 
@@ -78,10 +82,14 @@ def get_configs(benchmark_file_path, target_system_file_path):
 def prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, result_webhook):
     configs = get_configs(benchmark_file_path, target_system_file_path)
     configs['result_webhook'] = result_webhook
+    print('Using this configs to run the benchmark: {configs}')
     ret = run_benchmark(**configs)
     try:
-        return ret.json()
-    except:
+        data = ret.json()
+        print('Got a json return')
+        return data
+    except Exception as e:
+        print(e)
         return {}
 
 
@@ -95,4 +103,5 @@ if __name__ == '__main__':
         benchmark_file_path = sys.argv[1]
         target_system_file_path = sys.argv[2]
         result_webhook = sys.argv[3]
+    print(f'Using this arguments: {benchmark_file_path}, {target_system_file_path}, {result_webhook}')
     print(prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, result_webhook))
