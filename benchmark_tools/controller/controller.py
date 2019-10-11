@@ -62,7 +62,7 @@ def run_benchmark(benchmark, target_system, result_webhook):
     #     },
     #     'run_id': run_id
     # }
-    print('Sending results to webhook: {results} ->{result_webhook}')
+    print(f'Sending results to webhook: {results} ->{result_webhook}')
     return send_results_to_webhook(results, result_webhook)
 
 
@@ -82,7 +82,7 @@ def get_configs(benchmark_file_path, target_system_file_path):
 def prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, result_webhook):
     configs = get_configs(benchmark_file_path, target_system_file_path)
     configs['result_webhook'] = result_webhook
-    print('Using this configs to run the benchmark: {configs}')
+    print(f'Using this configs to run the benchmark: {configs}')
     ret = run_benchmark(**configs)
     try:
         data = ret.json()
