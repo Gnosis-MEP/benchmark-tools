@@ -17,7 +17,7 @@ from benchmark_tools.conf import (
 # this is just a mocked method for running the benchmark
 def start_benchmark(benchmark, target_system):
     time.sleep(5)
-    return {'latency_avg': 1}
+    return {'latency_avg': 0}
 
 
 def make_confs_id(benchmark, target_system):
