@@ -5,13 +5,6 @@ from event_service_utils.streams.redis import RedisStreamFactory
 
 from benchmark_tools.task_generator.base import BaseTask
 
-from benchmark_tools.conf import (
-    LOGGING_LEVEL,
-    REDIS_ADDRESS,
-    REDIS_PORT,
-    QUERY_MANAGER_CMD_KEY,
-)
-
 
 def new_action_msg(action, event_data):
     event_data['action'] = action
@@ -64,14 +57,20 @@ def run(actions, redis_address, redis_port, input_cmd_stream_key, logging_level)
 
 
 if __name__ == '__main__':
-    import sys
-    json_path = sys.argv[1]
-    with open(json_path, 'r') as f:
-        actions = json.load(f)
-    run(
-        actions=actions,
-        redis_address=REDIS_ADDRESS,
-        redis_port=REDIS_PORT,
-        input_cmd_stream_key=QUERY_MANAGER_CMD_KEY,
-        logging_level=LOGGING_LEVEL
-    )
+    pass
+    # from benchmark_tools.conf import (
+    #     LOGGING_LEVEL,
+    #     REDIS_ADDRESS,
+    #     REDIS_PORT,
+    # )
+    # import sys
+    # json_path = sys.argv[1]
+    # with open(json_path, 'r') as f:
+    #     actions = json.load(f)
+    # run(
+    #     actions=actions,
+    #     redis_address=REDIS_ADDRESS,
+    #     redis_port=REDIS_PORT,
+    #     input_cmd_stream_key=QUERY_MANAGER_CMD_KEY,
+    #     logging_level=LOGGING_LEVEL
+    # )

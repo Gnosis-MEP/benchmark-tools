@@ -19,7 +19,7 @@
                         },
                         {
                             "action": "task_gen_wait_for",
-                            "sleep_time": "10"
+                            "sleep_time": "3"
                         },
                         {
                             "action": "delQuery",
@@ -36,5 +36,5 @@
     },
     "target_system": {
     },
-    "result_webhook": "http://localhost:5000/123-456"
+    "result_webhook": "http://172.17.0.1:5000/123-456"
 }

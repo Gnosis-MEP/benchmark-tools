@@ -4,18 +4,8 @@ import hashlib
 import importlib
 import json
 import sys
-import time
-import uuid
 
 import requests
-
-from benchmark_tools.conf import (
-    BENCHMARK_JSON_CONFIG_PATH,
-    TARGET_SYSTEM_JSON_CONFIG_PATH,
-    RESULT_WEBHOOK_URL,
-)
-
-# from benchmark_tools import task_generator
 
 
 def replace_args_kwargs_vals_with_target_systems_confs(value, benchmark):
@@ -38,12 +28,13 @@ def get_tasks_functions(benchmark):
 
 def run_tasks(benchmark, target_system):
     for task in get_tasks_functions(benchmark):
+        print(f'Running task: {task}')
         task()
 
 
 # this is just a mocked method for running the benchmark
 def start_benchmark(benchmark, target_system):
-    run_tasks()
+    run_tasks(benchmark, target_system)
     return {'latency_avg': 0}
 
 
