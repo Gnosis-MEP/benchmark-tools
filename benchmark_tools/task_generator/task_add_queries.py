@@ -32,32 +32,46 @@ class TaskAddQueries(BaseTask):
             action = action_data.get('action', '')
             if action in ['addQuery', 'delQuery']:
                 formated_action = self.map_query_info_to_expected_format(action_data)
-                new_msg = new_action_msg('action', formated_action)
+                new_msg = new_action_msg(action, formated_action)
                 self.input_cmd_stream.write_events(new_msg)
                 return True
         return False
 
     def map_query_info_to_expected_format(self, query_data):
-        event_data = {
-            'query': query_data['query'],
-            'subscriber_id': query_data['subscriber_id'],
-            'query_num': query_data['query_id'],
-        }
+        if 'add' in query_data['action']:
+            event_data = {
+                'query': query_data['query'],
+                'subscriber_id': query_data['subscriber_id'],
+                'query_num': query_data['query_id'],
+            }
+        else:
+            event_data = {
+                'subscriber_id': query_data['subscriber_id'],
+                'query_num': query_data['query_id'],
+            }
         return event_data
 
 
-def run(*args, **kwargs):
-    if not kwargs:
-        kwargs = {}
-    stream_factory = RedisStreamFactory(host=REDIS_ADDRESS, port=REDIS_PORT)
-    kwargs.update(
-        input_cmd_stream_key=QUERY_MANAGER_CMD_KEY, stream_factory=stream_factory, logging_level=LOGGING_LEVEL
+def run(actions, redis_address, redis_port, input_cmd_stream_key, logging_level):
+    stream_factory = RedisStreamFactory(host=redis_address, port=redis_port)
+    task = TaskAddQueries(
+        actions=actions,
+        stream_factory=stream_factory,
+        input_cmd_stream_key=input_cmd_stream_key,
+        logging_level=logging_level
     )
-    task = TaskAddQueries(*args, **kwargs)
     task.execute_actions()
 
 
 if __name__ == '__main__':
     import sys
     json_path = sys.argv[1]
-    run(actions_json_file_path=json_path)
+    with open(json_path, 'r') as f:
+        actions = json.load(f)
+    run(
+        actions=actions,
+        redis_address=REDIS_ADDRESS,
+        redis_port=REDIS_PORT,
+        input_cmd_stream_key=QUERY_MANAGER_CMD_KEY,
+        logging_level=LOGGING_LEVEL
+    )

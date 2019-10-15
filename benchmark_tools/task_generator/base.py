@@ -1,4 +1,3 @@
-import json
 import time
 from benchmark_tools.logging import setup_logging
 
@@ -8,14 +7,14 @@ class BaseTask():
     def __init__(self, *args, **kwargs):
         self.logging_level = kwargs['logging_level']
         self.logger = setup_logging(self.__class__.__name__, self.logging_level)
-        self.actions_json_file_path = kwargs['actions_json_file_path']
-        self.actions = self.get_actions_from_json_file(self.actions_json_file_path)
+        self.actions = kwargs['actions']
+        # self.actions = self.get_actions_from_json_file(self.actions_json_file_path)
 
-    def get_actions_from_json_file(self, actions_json_file_path):
-        actions = {}
-        with open(actions_json_file_path, 'r') as f:
-            actions = json.load(f)
-        return actions
+    # def get_actions_from_json_file(self, actions_json_file_path):
+    #     actions = {}
+    #     with open(actions_json_file_path, 'r') as f:
+    #         actions = json.load(f)
+    #     return actions
 
     def process_action(self, action_data):
         action = action_data.get('action', '')

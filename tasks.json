@@ -11,10 +11,11 @@
     },
     {
         "action": "delQuery",
+        "subscriber_id": "3",
         "query_id": "1"
-    }
+    },
     {
         "action": "task_gen_wait_for",
         "sleep_time": "3"
-    },
+    }
 ]

@@ -1,9 +1,11 @@
 #!/usr/bin/env python
-import time
-import sys
-import json
-import uuid
+import functools
 import hashlib
+import importlib
+import json
+import sys
+import time
+import uuid
 
 import requests
 
@@ -13,10 +15,35 @@ from benchmark_tools.conf import (
     RESULT_WEBHOOK_URL,
 )
 
+# from benchmark_tools import task_generator
+
+
+def replace_args_kwargs_vals_with_target_systems_confs(value, benchmark):
+    return value
+
+
+def get_tasks_functions(benchmark):
+    # 'benchmark_tools.task_generator.'
+    for task in benchmark.get('tasks', []):
+        task_python_path = task.get('module')
+        task_module = importlib.import_module(task_python_path)
+        task_args = task.get('args', [])
+        task_kwargs = task.get('kwargs', {})
+        task_actions = task.get('actions', [])
+        task_kwargs['actions'] = task_actions
+        task_run_function = getattr(task_module, 'run')
+        task_function_prepared = functools.partial(task_run_function, *task_args, **task_kwargs)
+        yield task_function_prepared
+
+
+def run_tasks(benchmark, target_system):
+    for task in get_tasks_functions(benchmark):
+        task()
+
 
 # this is just a mocked method for running the benchmark
 def start_benchmark(benchmark, target_system):
-    time.sleep(5)
+    run_tasks()
     return {'latency_avg': 0}
 
 
@@ -46,7 +73,7 @@ def prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchma
 
 def run_benchmark(benchmark, target_system, result_webhook):
     confs_id = make_confs_id(benchmark, target_system)
-    run_id = str(uuid.uuid4())
+    run_id = result_webhook.split('/')[-1]
 
     print('Running benchmark...')
     benchmark_results = start_benchmark(benchmark, target_system)
@@ -79,9 +106,7 @@ def get_configs(benchmark_file_path, target_system_file_path):
     return {'benchmark': benchmark, 'target_system': target_system}
 
 
-def prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, result_webhook):
-    configs = get_configs(benchmark_file_path, target_system_file_path)
-    configs['result_webhook'] = result_webhook
+def prepare_and_run_benchmark(configs):
     print(f'Using this configs to run the benchmark: {configs}')
     ret = run_benchmark(**configs)
     try:
@@ -94,14 +119,19 @@ def prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, resu
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 4:
-        benchmark_file_path = BENCHMARK_JSON_CONFIG_PATH
-        target_system_file_path = TARGET_SYSTEM_JSON_CONFIG_PATH
-        result_webhook = RESULT_WEBHOOK_URL
+
+    if sys.stdin.isatty():
+        # if len(sys.argv) != 3:
+        #     benchmark_file_path = BENCHMARK_JSON_CONFIG_PATH
+        #     target_system_file_path = TARGET_SYSTEM_JSON_CONFIG_PATH
+        #     result_webhook = RESULT_WEBHOOK_URL
+        # else:
+        #     print('Replacing env vars with arguments')
+        #     benchmark_file_path = sys.argv[1]
+        #     target_system_file_path = sys.argv[2]
+        #     result_webhook = sys.argv[3]
+        print("ignoring...")
     else:
-        print('Replacing env vars with arguments')
-        benchmark_file_path = sys.argv[1]
-        target_system_file_path = sys.argv[2]
-        result_webhook = sys.argv[3]
-    print(f'Using this arguments: {benchmark_file_path}, {target_system_file_path}, {result_webhook}')
-    print(prepare_and_run_benchmark(benchmark_file_path, target_system_file_path, result_webhook))
+        configs = json.load(sys.stdin)
+    print(f'Using this arguments: {configs}')
+    print(prepare_and_run_benchmark(configs))
