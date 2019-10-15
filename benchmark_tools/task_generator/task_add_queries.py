@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-import time
 import json
 import uuid
 from event_service_utils.streams.redis import RedisStreamFactory
@@ -7,6 +6,7 @@ from event_service_utils.streams.redis import RedisStreamFactory
 from benchmark_tools.task_generator.base import BaseTask
 
 from benchmark_tools.conf import (
+    LOGGING_LEVEL,
     REDIS_ADDRESS,
     REDIS_PORT,
     QUERY_MANAGER_CMD_KEY,
@@ -50,9 +50,14 @@ def run(*args, **kwargs):
     if not kwargs:
         kwargs = {}
     stream_factory = RedisStreamFactory(host=REDIS_ADDRESS, port=REDIS_PORT)
-    kwargs.update(input_cmd_stream_key=QUERY_MANAGER_CMD_KEY, stream_factory=stream_factory)
+    kwargs.update(
+        input_cmd_stream_key=QUERY_MANAGER_CMD_KEY, stream_factory=stream_factory, logging_level=LOGGING_LEVEL
+    )
     task = TaskAddQueries(*args, **kwargs)
+    task.execute_actions()
 
 
 if __name__ == '__main__':
-    run()
+    import sys
+    json_path = sys.argv[1]
+    run(actions_json_file_path=json_path)

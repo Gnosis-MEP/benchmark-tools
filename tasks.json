@@ -1,0 +1,20 @@
+[
+    {
+        "action": "addQuery",
+        "query": "select object_detection from publisher 1 where (object.label = 'car') within TIMEFRAMEWINDOW(10) withconfidence >50 ",
+        "subscriber_id": "3",
+        "query_id": "1"
+    },
+    {
+        "action": "task_gen_wait_for",
+        "sleep_time": "10"
+    },
+    {
+        "action": "delQuery",
+        "query_id": "1"
+    }
+    {
+        "action": "task_gen_wait_for",
+        "sleep_time": "3"
+    },
+]
