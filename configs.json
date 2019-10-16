@@ -32,6 +32,20 @@
                         }
                     ]
                 }
+        ],
+        "evaluations": [
+            {
+                "module": "benchmark_tools.evaluation.mocked_evaluation",
+                "args": [],
+                "kwargs": {
+                    "some": "thing",
+                    "other": "arguments",
+                    "threshold_functions": {
+                        "latency_avg": "lambda x: x < 10"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            }
         ]
     },
     "target_system": {
