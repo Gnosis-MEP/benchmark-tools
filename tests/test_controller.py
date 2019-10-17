@@ -24,18 +24,18 @@ class ControllerTestCase(unittest.TestCase):
     def test_prepare_benchmark_results(self):
         benchmark = {1: 2}
         target_system = {3: 4}
-        benchmark_results = {'a': 'b'}
+        benchmark_results = {'evaluation_a': 'result'}
         run_id = '123-abc'
         confs_id = '789-abc'
         res = controller.prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchmark_results)
         expected = {
-            'results': benchmark_results,
+            'evaluations': {'evaluation_a': 'result'},
             'configs': {
-                'confs_id': confs_id,
-                'benchmark': benchmark,
-                'target_system': target_system
+                'confs_id': '789-abc',
+                'benchmark': {1: 2},
+                'target_system': {3: 4}
             },
-            'run_id': run_id
+        'run_id': '123-abc'
         }
         self.assertDictEqual(res, expected)
 
