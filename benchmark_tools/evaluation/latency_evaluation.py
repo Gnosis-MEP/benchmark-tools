@@ -8,7 +8,7 @@ from benchmark_tools.evaluation.base import BaseEvaluation
 class LatencyEvaluation(BaseEvaluation):
     JAEGER_TRACES_URL_FORMAT = (
         'api/traces?'
-        'limit=-1&lookback=6h&maxDuration&minDuration&'
+        'limit=700000000&lookback=6h&maxDuration&minDuration&'
         'operation={operation}&service={service}'
     )
 
@@ -47,7 +47,6 @@ class LatencyEvaluation(BaseEvaluation):
 
     def run(self):
         self.logger.debug('Evaluation for Latency is running...')
-
         traces = self.get_traces()
         results = self.calculate_latency_metrics(traces)
         return self.verify_thresholds(results)
