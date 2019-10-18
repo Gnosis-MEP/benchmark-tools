@@ -8,29 +8,29 @@
                         "redis_address": "172.17.0.1",
                         "redis_port": "6379",
                         "input_cmd_stream_key": "qm-cmd",
-                        "logging_level": "DEBUG"
-                    },
-                    "actions": [
-                        {
-                            "action": "addQuery",
-                            "query": "select object_detection from publisher 1 where (object.label = 'car') within TIMEFRAMEWINDOW(10) withconfidence >50 ",
-                            "subscriber_id": "3",
-                            "query_id": "1"
-                        },
-                        {
-                            "action": "task_gen_wait_for",
-                            "sleep_time": "15"
-                        },
-                        {
-                            "action": "delQuery",
-                            "subscriber_id": "3",
-                            "query_id": "1"
-                        },
-                        {
-                            "action": "task_gen_wait_for",
-                            "sleep_time": "3"
-                        }
-                    ]
+                        "logging_level": "DEBUG",
+                        "actions": [
+                            {
+                                "action": "addQuery",
+                                "query": "select object_detection from publisher 1 where (object.label = 'car') within TIMEFRAMEWINDOW(10) withconfidence >50 ",
+                                "subscriber_id": "3",
+                                "query_id": "1"
+                            },
+                            {
+                                "action": "task_gen_wait_for",
+                                "sleep_time": "15"
+                            },
+                            {
+                                "action": "delQuery",
+                                "subscriber_id": "3",
+                                "query_id": "1"
+                            },
+                            {
+                                "action": "task_gen_wait_for",
+                                "sleep_time": "3"
+                            }
+                        ]
+                    }
                 }
         ],
         "evaluations": [

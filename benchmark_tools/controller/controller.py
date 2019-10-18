@@ -19,8 +19,8 @@ def get_tasks(benchmark):
         task_module = importlib.import_module(task_python_path)
         task_args = task.get('args', [])
         task_kwargs = task.get('kwargs', {})
-        task_actions = task.get('actions', [])
-        task_kwargs['actions'] = task_actions
+        # task_actions = task.get('actions', [])
+        # task_kwargs['actions'] = task_actions
         task_run_function = getattr(task_module, 'run')
         task_function_prepared = functools.partial(task_run_function, *task_args, **task_kwargs)
         # task['function'] = task_function_prepared
