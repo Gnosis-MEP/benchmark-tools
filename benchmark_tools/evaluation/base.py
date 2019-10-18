@@ -27,8 +27,6 @@ class BaseEvaluation():
         if not threshold_function:
             raise Exception(f'No threshold function for {metric}.')
         threshold_ok = threshold_function(value)
-        if not threshold_ok:
-            result['passed'] = False
         return {
             'value': value,
             'threshold': threshold_function_str,

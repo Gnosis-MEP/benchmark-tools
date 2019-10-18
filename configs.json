@@ -19,7 +19,7 @@
                         },
                         {
                             "action": "task_gen_wait_for",
-                            "sleep_time": "3"
+                            "sleep_time": "15"
                         },
                         {
                             "action": "delQuery",
@@ -42,6 +42,18 @@
                     "other": "arguments",
                     "threshold_functions": {
                         "latency_avg": "lambda x: x < 10"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.latency_evaluation",
+                "args": [],
+                "kwargs":{
+                    "jaeger_api_host": "http://localhost:16686",
+                    "threshold_functions": {
+                        "latency_avg": "lambda x: x < (3 * 1.1)",
+                        "latency_std": "lambda x: x < (1 * 1.1)"
                     },
                     "logging_level": "DEBUG"
                 }
