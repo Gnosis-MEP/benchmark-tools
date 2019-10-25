@@ -1,4 +1,3 @@
-import time
 from benchmark_tools.logging import setup_logging
 
 
