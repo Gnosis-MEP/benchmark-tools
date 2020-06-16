@@ -2,17 +2,43 @@
     "benchmark":{
         "tasks": [
                 {
+                    "module": "benchmark_tools.task_generator.task_add_publisher",
+                    "args": [],
+                    "kwargs": {
+                        "redis_address": "172.17.0.1",
+                        "redis_port": "6379",
+                        "input_cmd_stream_key": "cm-cmd",
+                        "logging_level": "DEBUG",
+                        "actions": [
+                            {
+                               "publisher_id":"publisher1",
+                               "action":"pubJoin",
+                               "source":"rtmp://172.17.0.1/vod2/cars.mp4",
+                               "stream_key":"pub-cmd-publisher1",
+                               "meta":{
+                                  "geolocation":"",
+                                  "cctv":"True",
+                                  "color":"True",
+                                  "fps":"30",
+                                  "resolution":"640x480",
+                                  "color_channels":""
+                               }
+                            }
+                        ]
+                    }
+                },
+                {
                     "module": "benchmark_tools.task_generator.task_add_queries",
                     "args": [],
                     "kwargs": {
                         "redis_address": "172.17.0.1",
                         "redis_port": "6379",
-                        "input_cmd_stream_key": "qm-cmd",
+                        "input_cmd_stream_key": "cm-cmd",
                         "logging_level": "DEBUG",
                         "actions": [
                             {
                                 "action": "addQuery",
-                                "query": "select object_detection from publisher 1 where (object.label = 'car') within TIMEFRAMEWINDOW(10) withconfidence >50 ",
+                                "query": "select object_detection from publisher1 where (object1.label = car) within TUMBLING_COUNT_WINDOW(4) withconfidence >50",
                                 "subscriber_id": "3",
                                 "query_id": "1"
                             },
@@ -31,29 +57,39 @@
                             }
                         ]
                     }
+                },
+                {
+                    "module": "benchmark_tools.task_generator.task_export_jaeger_json.py",
+                    "args": [],
+                    "kwargs" : {
+                        "jaeger_api_host": "http://localhost:16686",
+                        "logging_level": "DEBUG",
+                        "actions": [
+                            {
+                                "action": "exportTraces",
+                                "service": "PreProcessing",
+                                "operation": "publish_next_event",
+                                "output_path": "/service/outputs"
+                            },
+                            {
+                                "action": "exportTraces",
+                                "service": "ObjectDetectionService",
+                                "operation": "process_data_event",
+                                "output_path": "/service/outputs"
+                            }
+                        ]
+                    }
                 }
         ],
         "evaluations": [
             {
-                "module": "benchmark_tools.evaluation.mocked_evaluation",
-                "args": [],
-                "kwargs": {
-                    "some": "thing",
-                    "other": "arguments",
-                    "threshold_functions": {
-                        "latency_avg": "lambda x: x < 10"
-                    },
-                    "logging_level": "DEBUG"
-                }
-            },
-            {
                 "module": "benchmark_tools.evaluation.latency_evaluation",
                 "args": [],
                 "kwargs":{
-                    "jaeger_api_host": "http://localhost:16686",
+                    "jaeger_api_host": "http://172.17.0.1:16686",
                     "threshold_functions": {
                         "latency_avg": "lambda x: x < (3 * 1.1)",
-                        "latency_std": "lambda x: x < (1 * 1.1)"
+                        "latency_std": "lambda x: x < (3 * 1.1)"
                     },
                     "logging_level": "DEBUG"
                 }
