@@ -59,7 +59,7 @@
                     }
                 },
                 {
-                    "module": "benchmark_tools.task_generator.task_export_jaeger_json.py",
+                    "module": "benchmark_tools.task_generator.task_export_jaeger_json",
                     "args": [],
                     "kwargs" : {
                         "jaeger_api_host": "http://localhost:16686",
@@ -69,13 +69,13 @@
                                 "action": "exportTraces",
                                 "service": "PreProcessing",
                                 "operation": "publish_next_event",
-                                "output_path": "/service/outputs"
+                                "output_path": "./outputs"
                             },
                             {
                                 "action": "exportTraces",
                                 "service": "ObjectDetectionService",
                                 "operation": "process_data_event",
-                                "output_path": "/service/outputs"
+                                "output_path": "./outputs"
                             }
                         ]
                     }

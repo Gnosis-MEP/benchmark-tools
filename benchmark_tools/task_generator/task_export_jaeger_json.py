@@ -37,7 +37,7 @@ class JaegerExporter(BaseTask):
                 output_path = action_data['output_path']
                 traces = self.get_traces(service, operation)
                 output_file = self.save_traces_js_file_to_path(service, operation, traces, output_path)
-                self.logger.info('Output file: {output_file}')
+                self.logger.info(f'Output file: {output_file}')
                 return True
         return False
 
