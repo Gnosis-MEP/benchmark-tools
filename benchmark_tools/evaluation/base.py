@@ -1,3 +1,5 @@
+import re
+
 from benchmark_tools.logging import setup_logging
 
 
@@ -19,12 +21,21 @@ class BaseEvaluation():
                 'str': function_str
             }
 
+    def get_regexp_threshold_function(self, metric):
+        for func_key in self.threshold_functions.keys():
+            search = re.search(func_key, metric)
+            if search:
+                return self.threshold_functions[func_key]
+
     def verify_threshold_for_metric(self, metric, value):
         threshold_function_data = self.threshold_functions.get(metric, None)
+        if not threshold_function_data:
+            threshold_function_data = self.get_regexp_threshold_function(metric)
+
+        if not threshold_function_data:
+            raise Exception(f'No threshold function for {metric}.')
         threshold_function = threshold_function_data['function']
         threshold_function_str = threshold_function_data['str']
-        if not threshold_function:
-            raise Exception(f'No threshold function for {metric}.')
         threshold_ok = threshold_function(value)
         return {
             'value': value,

@@ -93,6 +93,30 @@
                     },
                     "logging_level": "DEBUG"
                 }
+            },
+            {
+                "module": "benchmark_tools.evaluation.per_service_speed_evaluation",
+                "args": [],
+                "kwargs":{
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "services": "all",
+                    "threshold_functions": {
+                        ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
+                        ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",
+                        ".*_tracer_injection_avg": "lambda x: x < 0.0001",
+                        ".*_tracer_injection_std": "lambda x: x < 0.0001",
+                        ".*_process_data_event_avg": "lambda x: x < 0.05",
+                        ".*_process_data_event_std": "lambda x: x < 0.05",
+                        ".*_publish_next_event_avg": "lambda x: x < 0.01",
+                        ".*_publish_next_event_std": "lambda x: x < 0.01",
+                        ".*_process_action_avg": "lambda x: x < 0.1",
+                        ".*_process_action_std": "lambda x: x < 0.1",
+                        ".*": "lambda x: x < (0.01)",
+                        "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
+                        "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)"
+                    },
+                    "logging_level": "DEBUG"
+                }
             }
         ]
     },
