@@ -17,11 +17,10 @@ class PerServiceSpeedEvaluation(BaseEvaluation):
     def __init__(self, *args, **kwargs):
         super(PerServiceSpeedEvaluation, self).__init__(*args, **kwargs)
         self.jaeger_api_host = kwargs['jaeger_api_host']
-        # self.operations = kwargs['operations']
         services = kwargs['services']
         if services == 'all':
-            all_services = self.get_services()
-            self.services = all_services
+            services = self.get_services()
+        self.services = services
 
     def calculate_average(self, values):
         return reduce(lambda a, b: a + b, values) / len(values)
@@ -64,6 +63,10 @@ class PerServiceSpeedEvaluation(BaseEvaluation):
         traces = req.json()['data']
         return traces
 
+    def get_traces_from_file(self, service):
+        with open('./ObjectDetectionService-process_data_event.json', 'r') as f:
+            return json.load(f)['data']
+
     def get_services(self):
         end_point = self.JAEGER_SERVICES_URL
         services_url = f'{self.jaeger_api_host}/{end_point}'
@@ -95,12 +98,11 @@ class PerServiceSpeedEvaluation(BaseEvaluation):
         for service in self.services:
             if 'jaeger' in service:
                 continue
-            # operations = self.get_service_operations(service)
             traces = self.get_traces_per_service(service)
+            # traces = self.get_traces_from_file(service)
             results_per_operation = self.get_traces_operations_speed(traces, service)
             averaged_results = self.calculate_service_operations_average_and_std(results_per_operation, service)
             results.update(averaged_results)
-        # import ipdb; ipdb.set_trace()
         return self.verify_thresholds(results)
 
 
@@ -117,18 +119,18 @@ def run(jaeger_api_host, services, threshold_functions, logging_level):
 if __name__ == '__main__':
     kwargs = {
         "jaeger_api_host": "http://172.17.0.1:16686",
-        "services": "all",
+        "services": ["ObjectDetectionService"],
         "threshold_functions": {
-            ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
-            ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",
-            ".*_tracer_injection_avg": "lambda x: x < 0.0001",
-            ".*_tracer_injection_std": "lambda x: x < 0.0001",
-            ".*_process_data_event_avg": "lambda x: x < 0.05",
-            ".*_process_data_event_std": "lambda x: x < 0.05",
-            ".*_publish_next_event_avg": "lambda x: x < 0.01",
-            ".*_publish_next_event_std": "lambda x: x < 0.01",
-            ".*_process_action_avg": "lambda x: x < 0.1",
-            ".*_process_action_std": "lambda x: x < 0.1",
+            # ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
+            # ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",
+            # ".*_tracer_injection_avg": "lambda x: x < 0.0001",
+            # ".*_tracer_injection_std": "lambda x: x < 0.0001",
+            # ".*_process_data_event_avg": "lambda x: x < 0.05",
+            # ".*_process_data_event_std": "lambda x: x < 0.05",
+            # ".*_publish_next_event_avg": "lambda x: x < 0.01",
+            # ".*_publish_next_event_std": "lambda x: x < 0.01",
+            # ".*_process_action_avg": "lambda x: x < 0.1",
+            # ".*_process_action_std": "lambda x: x < 0.1",
             ".*": "lambda x: x < (0.01)",
             "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
             "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)",
