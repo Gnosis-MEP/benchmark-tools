@@ -1,0 +1,36 @@
+{
+    "benchmark":{
+        "tasks": [
+        ],
+        "evaluations": [
+            {
+                "module": "benchmark_tools.evaluation.latency_evaluation",
+                "args": [],
+                "kwargs":{
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "threshold_functions": {
+                        "latency_avg": "lambda x: x < (3 * 1.1)",
+                        "latency_std": "lambda x: x < (3 * 1.1)"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.per_service_speed_evaluation",
+                "args": [],
+                "kwargs":{
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "services": ["ClientManager"],
+                    "threshold_functions": {
+                        "ClientManager_speed_avg": "lambda x: x < (3 * 1.1)",
+                        "ClientManager_speed_std": "lambda x: x < (3 * 1.1)"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            }
+        ]
+    },
+    "target_system": {
+    },
+    "result_webhook": "http://172.17.0.1:5000/123-456"
+}

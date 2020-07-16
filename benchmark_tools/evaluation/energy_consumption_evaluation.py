@@ -178,6 +178,10 @@ def run(energy_grid_api_host, start_time, energy_device_id, threshold_functions,
 
 
 if __name__ == '__main__':
+
+    # 4424 big gpu
+    # 1507 jetson
+    # other?
     kwargs = {
         "energy_grid_api_host": "http://localhost:5000",
         "jaeger_api_host": "http://localhost:16686",
