@@ -16,7 +16,7 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
     )
     JAEGER_TRACES_URL_FORMAT = (
         'api/traces?'
-        'limit=700000000&lookback=8h&maxDuration&minDuration&'
+        'limit=700000000&lookback=10h&maxDuration&minDuration&'
         'service={service}&operation={operation}'
     )
 
@@ -32,7 +32,7 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
     def setup(self):
         if isinstance(self.start_time, str):
             if self.start_time.lower() == 'jaeger':
-                self.start_time = self.get_jaeger_first_timestamp()
+                self.start_time = self.get_jaeger_timestamp(first=True)
             else:
                 self.start_time = float(self.start_time)
 
@@ -41,10 +41,12 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         if isinstance(self.end_time, str):
             if self.end_time.lower() == 'now':
                 self.end_time = datetime.datetime.now().timestamp()
+            elif self.end_time.lower() == 'jaeger':
+                self.end_time = self.get_jaeger_timestamp(first=False)
             else:
                 self.end_time = float(self.end_time)
 
-    def get_jaeger_first_timestamp(self):
+    def get_jaeger_timestamp(self, first=True):
         service = 'ClientManager'
         operation = 'process_action'
         self.logger.info(
@@ -54,10 +56,15 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         traces_url = f'{self.jaeger_api_host}/{end_point}'
         req = requests.get(traces_url)
         traces = req.json()['data']
-        start_timestamp = traces[0]['spans'][0]['startTime'] / 10**6
-        # shifts to one second earlier
-        earlier_shifted_start_timestamp = start_timestamp - 1
-        return earlier_shifted_start_timestamp
+        trace_timestamp = None
+        if first:
+            start_timestamp = traces[-1]['spans'][0]['startTime'] / 10**6
+            trace_timestamp = start_timestamp - 1
+        else:
+            end_span = traces[0]['spans'][-1]
+            end_timestamp = (end_span['startTime'] + end_span['duration']) / 10**6
+            trace_timestamp = end_timestamp + 1
+        return trace_timestamp
 
     def get_readings_from_filepath(self, energy_readings_path):
         readings = []
