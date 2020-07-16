@@ -1,10 +1,28 @@
 # Benchmark Tools
 Tools for benchmarking.
+It has a controller that executes a list of **tasks** followed by the execution of a list of **evaluations**, then the results are logged in the terminal and send as a POST request to the `result_webhook` url (the URL endpoint for the benchmark execution on the Benchmark Platform Controller webservice).
+
+Each task has it's own use, characteristics and parameters to run it. Each **task** execute a list of **actions**.
+
+Each **evaluation** analyses a list of **metrics** and validades their values agains on respective **threshold functions**
+
+One can also use this as a stand-alone tool, by checking output in the terminal, and ignoring the connection error when the results are sent to a non-existent `result_webhook`.
+
+
+## Configuring
+All the configuration is done in a json file.
+The important thing is that it should follow the same structure of the `configs.json` file.
+
 
 ## Running
-
+Once finished this configuration file (or the `configs.json`), it should be `cat` and piped to the controller module.
+This can be done in different ways: using a local python installation through pipenv or docker-compose.
+### Locally
 `cat configs.json | python benchmark_tools/controller/controller.py`
 
+### Docker-compose
+
+`cat configs.json | docker-compose run --rm benchmark-tools`
 
 
 # Tasks
