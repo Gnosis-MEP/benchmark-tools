@@ -53,7 +53,10 @@ def run_evaluations(benchmark, target_system):
     evaluations_result = {'passed': True}
     for evaluation_data, evaluation in get_evaluations(benchmark):
         print(f'Running evaluation: {evaluation_data["module"]}')
-        result = evaluation()
+        try:
+            result = evaluation()
+        except Exception as e:
+            result = {'passed': False, 'error': str(e)}
         evaluations_result[evaluation_data['module']] = result
         if result['passed'] is False:
             evaluations_result['passed'] = False

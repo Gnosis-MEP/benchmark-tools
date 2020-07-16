@@ -38,7 +38,7 @@
                         "actions": [
                             {
                                 "action": "addQuery",
-                                "query": "select object_detection from publisher1 where (object1.label = car) within TUMBLING_COUNT_WINDOW(4) withconfidence >50",
+                                "query": "select object_detection from publisher1 where (object1.label = person) within TUMBLING_COUNT_WINDOW(1) withconfidence >30",
                                 "subscriber_id": "3",
                                 "query_id": "1"
                             },
@@ -125,6 +125,22 @@
                         ".*": "lambda x: x < (0.01)",
                         "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
                         "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.energy_consumption_evaluation",
+                "args": [],
+                "kwargs": {
+                    "energy_grid_api_host": "http://10.196.2.31:5000",
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "start_time": "jaeger",
+                    "end_time": "now",
+                    "energy_device_id": "4424",
+                    "threshold_functions": {
+                        ".*": "lambda x: x < 300",
+                        "real_energy_avg": "lambda x: x < 300"
                     },
                     "logging_level": "DEBUG"
                 }
