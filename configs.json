@@ -62,7 +62,7 @@
                     "module": "benchmark_tools.task_generator.task_export_jaeger_json",
                     "args": [],
                     "kwargs" : {
-                        "jaeger_api_host": "http://localhost:16686",
+                        "jaeger_api_host": "http://172.17.0.1:16686",
                         "logging_level": "DEBUG",
                         "actions": [
                             {
