@@ -25,8 +25,9 @@ class ThroughputEvaluation(LatencyEvaluation):
         self.logger.debug('Running Throughput Evaluation.')
         traces = self.get_traces()
         avg_latency = self.calculate_latency_metrics(traces)
+        throughput = self.calculate_throughput(avg_latency['latency_avg'])
         result = {
-            'throughput': self.calculate_throughput(avg_latency['latency_avg'])
+            'throughput_avg': throughput
         }
         return self.verify_thresholds(result)
 
