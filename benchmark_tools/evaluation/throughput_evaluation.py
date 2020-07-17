@@ -3,9 +3,6 @@
 # Date : 07-July-2020
 # Description : This python script is to calculate a base throughput evaluation of the system.
 
-from functools import reduce
-import requests
-
 from benchmark_tools.evaluation.latency_evaluation import LatencyEvaluation
 
 
@@ -21,15 +18,17 @@ class ThroughputEvaluation(LatencyEvaluation):
         self.jaeger_api_host = kwargs['jaeger_api_host']
 
     def calculate_throughput(self, avg_latency):
-        retVal = (1/avg_latency)
-        return retVal  # this will give us the required throughput of the system.
+        retval = (1/avg_latency)
+        return retval  # this will give us the required throughput of the system.
 
     def run(self):
         self.logger.debug('Running Throughput Evaluation.')
         traces = self.get_traces()
         avg_latency = self.calculate_latency_metrics(traces)
-        throughput = self.calculate_throughput(avg_latency['latency_avg'])
-        return self.verify_thresholds(throughput)
+        result = {
+            'throughput': self.calculate_throughput(avg_latency['latency_avg'])
+        }
+        return self.verify_thresholds(result)
 
 
 def run(jaeger_api_host, threshold_functions, logging_level):
