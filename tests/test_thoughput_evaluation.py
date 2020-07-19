@@ -4,7 +4,6 @@
 # Description : This python script is a unit test file to Throughput Evaluation.
 
 
-
 import unittest
 from unittest.mock import patch
 
@@ -31,12 +30,12 @@ class ThroughputTestCase(unittest.TestCase):
         self.assertTrue(mocked_calculate.called)
         self.assertTrue(mocked_get.called)
 
-
     def test_throughput_should_return_correctly(self):
         avg_latency = 0.03
         ret = self.evaluation.calculate_throughput(avg_latency)
         expected_ret = (1/avg_latency)
         self.assertEquals(ret, expected_ret)
+
 
 if __name__ == '__main__':
     unittest.main()
