@@ -50,7 +50,8 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         service = 'ClientManager'
         operation = 'process_action'
         self.logger.info(
-            f'Geting start_time from Jaeger "{self.jaeger_api_host}" first "{operation}" on service "{service}"'
+            f'Geting event trace ts (start={first})'
+            f' from Jaeger "{self.jaeger_api_host}" first "{operation}" on service "{service}"'
         )
         end_point = self.JAEGER_TRACES_URL_FORMAT.format(service=service, operation=operation)
         traces_url = f'{self.jaeger_api_host}/{end_point}'
@@ -58,10 +59,10 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         traces = req.json()['data']
         trace_timestamp = None
         if first:
-            start_timestamp = traces[-1]['spans'][0]['startTime'] / 10**6
+            start_timestamp = traces[0]['spans'][0]['startTime'] / 10**6
             trace_timestamp = start_timestamp - 1
         else:
-            end_span = traces[0]['spans'][-1]
+            end_span = traces[-1]['spans'][-1]
             end_timestamp = (end_span['startTime'] + end_span['duration']) / 10**6
             trace_timestamp = end_timestamp + 1
         return trace_timestamp
