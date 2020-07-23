@@ -57,69 +57,16 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         traces_url = f'{self.jaeger_api_host}/{end_point}'
         req = requests.get(traces_url)
         traces = req.json()['data']
+        ordered_traces = self.order_traces(traces)
         trace_timestamp = None
         if first:
-            start_timestamp = traces[0]['spans'][0]['startTime'] / 10**6
+            start_timestamp = ordered_traces[0]['spans'][0]['startTime'] / 10**6
             trace_timestamp = start_timestamp - 1
         else:
-            end_span = traces[-1]['spans'][-1]
+            end_span = ordered_traces[-1]['spans'][-1]
             end_timestamp = (end_span['startTime'] + end_span['duration']) / 10**6
             trace_timestamp = end_timestamp + 1
         return trace_timestamp
-
-    def get_readings_from_filepath(self, energy_readings_path):
-        readings = []
-        found_starting_point = False
-        with open(energy_readings_path, 'r') as csv_file:
-            reader = csv.reader(csv_file)
-            next(reader)  # Skip header
-            for i, reading in enumerate(reader):
-                timestamp = float(reading[0])
-                device_id = int(reading[3])
-                if device_id != self.energy_device_id:
-                    continue
-
-                # Find experiment starting point
-                if timestamp < self.start_time:
-                    continue
-                else:
-                    if found_starting_point is False:
-                        found_starting_point = True
-                        curr_datetime = datetime.datetime.fromtimestamp(timestamp)
-                        back_start_datetime = datetime.datetime.fromtimestamp(self.start_time)
-
-                        self.logger.debug(f'Found experiment start point on energy consumption data.')
-                        self.logger.debug(f'Current Energy Reading datetime: {curr_datetime}')
-                        self.logger.debug(f'Experiment Starting time:        {back_start_datetime}')
-
-                # Find experiment ending point
-                if timestamp > self.end_time:
-                    curr_datetime = datetime.datetime.fromtimestamp(timestamp)
-                    back_end_datetime = datetime.datetime.fromtimestamp(self.end_time)
-
-                    self.logger.debug(f'Found experiment end point on energy consumption data.')
-                    self.logger.debug(f'Current Energy Reading datetime: {curr_datetime}')
-                    self.logger.debug(f'Experiment Ending time:        {back_end_datetime}')
-
-                    break
-                voltage = int(reading[6])
-                freq = float(reading[7])
-                real_energy = int(reading[9])
-                reading = {
-                    'device_id': device_id,
-                    'freq': freq,
-                    'real_energy': real_energy,
-                    'voltage': voltage,
-                }
-                readings.append(reading)
-        return readings
-
-    def get_traces_per_service(self, service):
-        end_point = self.JAEGER_TRACES_URL_FORMAT.format(service=service)
-        traces_url = f'{self.jaeger_api_host}/{end_point}'
-        req = requests.get(traces_url)
-        traces = req.json()['data']
-        return traces
 
     def get_readings_from_webservice(self, start_timestamp, end_timestamp, device_id):
         end_point_url = f'{self.energy_grid_api_host}{self.ENERGY_GRID_WEBSERVICE_GET_ENERGY_ENDPOINT}'.format(
@@ -133,7 +80,6 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
 
     def get_energy_readings(self):
         return self.get_readings_from_webservice(self.start_time, self.end_time, self.energy_device_id)
-        # return self.get_readings_from_filepath(energy_readings_path)
 
     def calculate_average(self, values):
         return functools.reduce(lambda a, b: a + b, values) / len(values)
@@ -157,6 +103,10 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         results.update(self.metris_avg_and_std('frequency', freqs))
         results.update(self.metris_avg_and_std('real_energy', real_energies))
         return results
+
+    def order_traces(self, traces):
+        ordered_traces = sorted(traces, key=lambda t: t['spans'][0]['startTime'])
+        return ordered_traces
 
     def run(self):
         start_datetime = datetime.datetime.fromtimestamp(self.start_time)
@@ -194,6 +144,7 @@ if __name__ == '__main__':
         "energy_grid_api_host": "http://localhost:5000",
         "jaeger_api_host": "http://localhost:16686",
         "start_time": "jaeger",
+        "end_time": "jaeger",
         # "energy_device_id": "1507",4424
         "energy_device_id": "4424",
         "threshold_functions": {
