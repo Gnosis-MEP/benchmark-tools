@@ -81,6 +81,14 @@ def send_results_to_webhook(results, result_webhook):
     return res
 
 
+def save_results_to_disk(results, result_webhook):
+    file_path = result_webhook.split('file://')[-1]
+    with open(file_path, 'w') as f:
+        json.dump(results, f, indent=4)
+
+    return file_path
+
+
 def prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchmark_results):
     results = {
         'evaluations': benchmark_results,
@@ -103,8 +111,12 @@ def run_benchmark(benchmark, target_system, result_webhook):
     print('Finished benchmark.')
     print('preparing output')
     results = prepare_benchmark_output(run_id, benchmark, target_system, confs_id, benchmark_results)
-    print(f'Sending results to webhook: {results} ->{result_webhook}')
-    return send_results_to_webhook(results, result_webhook)
+    if 'file://' in result_webhook:
+        print(f'Saving results to disk instead of posting it to url.')
+        return save_results_to_disk(results, result_webhook)
+    else:
+        print(f'Sending results to webhook: {results} ->{result_webhook}')
+        return send_results_to_webhook(results, result_webhook)
 
 
 def get_configs_from_file(file_path):
@@ -123,6 +135,8 @@ def get_configs(benchmark_file_path, target_system_file_path):
 def prepare_and_run_benchmark(configs):
     print(f'Using this configs to run the benchmark: {configs}')
     ret = run_benchmark(**configs)
+    if isinstance(ret, str):
+        return ret
     try:
         data = ret.json()
         print('Got a json return')

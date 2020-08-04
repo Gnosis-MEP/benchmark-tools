@@ -27,6 +27,7 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         self.start_time = kwargs['start_time']
         self.end_time = kwargs['end_time']
         self.energy_device_id = kwargs['energy_device_id']
+        self.save_readings_on = kwargs.get('save_readings_on', None)
         self.setup()
 
     def setup(self):
@@ -81,6 +82,11 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
     def get_energy_readings(self):
         return self.get_readings_from_webservice(self.start_time, self.end_time, self.energy_device_id)
 
+    def save_readings(self, readings):
+        self.logger.info(f'Saving energy readings on: {self.save_readings_on}')
+        with open(self.save_readings_on, 'w') as f:
+            json.dump(readings, f, indent=4)
+
     def calculate_average(self, values):
         return functools.reduce(lambda a, b: a + b, values) / len(values)
 
@@ -118,17 +124,20 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         )
         readings = self.get_energy_readings()
         self.logger.debug(f'Total Energy Consumption values to be analysed: {len(readings)}')
+        if self.save_readings_on is not None:
+            self.save_readings(readings)
         results = self.calculate_metrics(readings)
         return self.verify_thresholds(results)
 
 
-def run(energy_grid_api_host, start_time, energy_device_id, threshold_functions, logging_level, end_time=None, jaeger_api_host=None):
+def run(energy_grid_api_host, start_time, energy_device_id, threshold_functions, logging_level, save_readings_on=None, end_time=None, jaeger_api_host=None):
     evaluation = EnergyConsumptionEvaluation(
         jaeger_api_host=jaeger_api_host,
         energy_grid_api_host=energy_grid_api_host,
         start_time=start_time,
         end_time=end_time,
         energy_device_id=int(energy_device_id),
+        save_readings_on=save_readings_on,
         threshold_functions=threshold_functions,
         logging_level=logging_level
     )
@@ -146,6 +155,7 @@ if __name__ == '__main__':
         "start_time": "jaeger",
         "end_time": "jaeger",
         # "energy_device_id": "1507",4424
+        "save_readings_on": 'energy_readings.json',
         "energy_device_id": "4424",
         "threshold_functions": {
             ".*": "lambda x: x < 300",
