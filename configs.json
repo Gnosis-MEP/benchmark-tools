@@ -13,16 +13,33 @@
                             {
                                "publisher_id":"publisher1",
                                "action":"pubJoin",
-                               "source":"rtmp://172.17.0.1/vod2/cars.mp4",
+                               "source":"rtmp://172.17.0.1/vod2/coco2017-val-300x300-30fps.flv",
                                "stream_key":"pub-cmd-publisher1",
                                "meta":{
                                   "geolocation":"",
                                   "cctv":"True",
                                   "color":"True",
                                   "fps":"30",
-                                  "resolution":"640x480",
+                                  "resolution":"300x300",
                                   "color_channels":""
                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "module": "benchmark_tools.task_generator.task_add_subscriber",
+                    "args": [],
+                    "kwargs": {
+                        "redis_address": "172.17.0.1",
+                        "redis_port": "6379",
+                        "output_path": "./outputs",
+                        "logging_level": "INFO",
+                        "actions": [
+                            {
+                                "action": "exportSubscribeToQuery",
+                                "subscriber_id": "3",
+                                "query_num": "1"
                             }
                         ]
                     }
@@ -58,7 +75,7 @@
                                 "operation": "publish_next_event",
                                 "wait_retry_time": 10,
                                 "event_timeout": 15,
-                                "forced_stop_timeout_limit": 30
+                                "forced_stop_timeout_limit": 180
                             }
                         ]
                     }
@@ -109,6 +126,22 @@
         ],
         "evaluations": [
             {
+                "module": "benchmark_tools.evaluation.energy_consumption_evaluation",
+                "args": [],
+                "kwargs": {
+                    "energy_grid_api_host": "http://10.196.2.31:5000",
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "start_time": "jaeger",
+                    "end_time": "jaeger",
+                    "energy_device_id": "4424",
+                    "threshold_functions": {
+                        ".*": "lambda x: x < 300",
+                        "real_energy_avg": "lambda x: x < 300"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            },
+            {
                 "module": "benchmark_tools.evaluation.latency_evaluation",
                 "args": [],
                 "kwargs":{
@@ -116,6 +149,23 @@
                     "threshold_functions": {
                         "latency_avg": "lambda x: x < (3 * 1.1)",
                         "latency_std": "lambda x: x < (3 * 1.1)"
+                    },
+                    "logging_level": "DEBUG"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.sub_accuracy_evaluation",
+                "args": [],
+                "kwargs": {
+                    "subscription_jl": "./outputs/subscription_3-1.jl",
+                    "dataset_annotations_json": "./datasets/coco2017/annotations/instances_val2017.json",
+                    "dataset_frameindex_json": "./datasets/coco2017/frame_indexes/coco2017-val-300x300-30fps.json",
+                    "class_label": "person",
+                    "threshold_functions": {
+                        "accuracy": "lambda x: x > 0.5",
+                        "precision": "lambda x: x > 0.5",
+                        "recall": "lambda x: x > 0.9",
+                        "f_score": "lambda x: x > 0.6"
                     },
                     "logging_level": "DEBUG"
                 }
@@ -154,26 +204,10 @@
                     },
                     "logging_level": "DEBUG"
                 }
-            },
-            {
-                "module": "benchmark_tools.evaluation.energy_consumption_evaluation",
-                "args": [],
-                "kwargs": {
-                    "energy_grid_api_host": "http://10.196.2.31:5000",
-                    "jaeger_api_host": "http://172.17.0.1:16686",
-                    "start_time": "jaeger",
-                    "end_time": "jaeger",
-                    "energy_device_id": "4424",
-                    "threshold_functions": {
-                        ".*": "lambda x: x < 300",
-                        "real_energy_avg": "lambda x: x < 300"
-                    },
-                    "logging_level": "DEBUG"
-                }
             }
         ]
     },
     "target_system": {
     },
-    "result_webhook": "http://172.17.0.1:5000/123-456"
+    "result_webhook": "file://./outputs/results.json"
 }
