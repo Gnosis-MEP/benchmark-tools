@@ -65,7 +65,7 @@ class WaitEventTraceTimeuot(BaseTask):
                 self.logger.info(
                     f'Stop wainting..')
             self.logger.info(
-                f'Event timeout: {event_is_timeout}; Forced Timeout {task_is_forced_timeout}; Current Timeout {current_timeout}'
+                f'Event timeout: {event_is_timeout}; Forced Timeout {task_is_forced_timeout}; Current Timeout {current_timeout}; Forced Timeout limit {forced_stop_timeout_limit}'
             )
 
         end_ts = datetime.datetime.now().timestamp()
