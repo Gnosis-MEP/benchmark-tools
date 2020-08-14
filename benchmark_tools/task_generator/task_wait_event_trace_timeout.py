@@ -12,7 +12,7 @@ from benchmark_tools.task_generator.base import BaseTask
 class WaitEventTraceTimeuot(BaseTask):
     JAEGER_TRACES_URL_FORMAT = (
         'api/traces?'
-        'limit=1&start={start_mm_timestamp}&maxDuration&minDuration&'
+        'limit={limit}&start={start_mm_timestamp}&maxDuration&minDuration&'
         'operation={operation}&service={service}'
     )
 
@@ -20,11 +20,11 @@ class WaitEventTraceTimeuot(BaseTask):
         super(WaitEventTraceTimeuot, self).__init__(*args, **kwargs)
         self.jaeger_api_host = kwargs['jaeger_api_host']
 
-    def get_traces_last_seconds(self, service, operation, lookback_seconds):
+    def get_traces_last_seconds(self, service, operation, lookback_seconds, limit=1):
         last_seconds_ts = datetime.datetime.now().timestamp() - lookback_seconds
         last_seconds_mm_ts = int(last_seconds_ts * 10**6)
         end_point = self.JAEGER_TRACES_URL_FORMAT.format(
-            start_mm_timestamp=last_seconds_mm_ts, operation=operation, service=service)
+            start_mm_timestamp=last_seconds_mm_ts, operation=operation, service=service, limit=limit)
         traces_url = f'{self.jaeger_api_host}/{end_point}'
         req = requests.get(traces_url)
         traces = req.json()
@@ -72,11 +72,45 @@ class WaitEventTraceTimeuot(BaseTask):
         total_wait = end_ts - start_ts
         self.logger.info(f'Total wait in seconds: {total_wait}')
 
+    def wait_count_event_trace(self, action_data):
+        service = action_data['service']
+        operation = action_data['operation']
+        wait_retry_time = float(action_data['wait_retry_time'])
+        event_count = int(action_data['event_count'])
+        forced_stop_timeout_limit = float(action_data['forced_stop_timeout_limit'])
+
+        start_ts = datetime.datetime.now().timestamp()
+        keep_waiting = True
+        while keep_waiting:
+            self.logger.info(f'Waiting {wait_retry_time} before retry...')
+            time.sleep(wait_retry_time)
+            traces_resp = self.get_traces_last_seconds(service, operation, 18000, limit=event_count)
+            traces = traces_resp['data']
+            trace_count = len(traces)
+            task_is_forced_timeout = False
+            ts_now = datetime.datetime.now().timestamp()
+
+            task_is_forced_timeout = (ts_now - start_ts) > forced_stop_timeout_limit
+            if trace_count >= event_count or task_is_forced_timeout:
+                keep_waiting = False
+                self.logger.info(
+                    f'Stop wainting..')
+            self.logger.info(
+                f'Event trace count: {trace_count}; Forced Timeout {task_is_forced_timeout}; Forced Timeout limit {forced_stop_timeout_limit}'
+            )
+
+        end_ts = datetime.datetime.now().timestamp()
+        total_wait = end_ts - start_ts
+        self.logger.info(f'Total wait in seconds: {total_wait}')
+
     def process_action(self, action_data):
         if not super(WaitEventTraceTimeuot, self).process_action(action_data):
             action = action_data.get('action', '')
             if action == 'wait_timeout_event_trace':
                 self.wait_timeout_event_trace(action_data)
+                return True
+            if action == 'wait_count_event_trace':
+                self.wait_count_event_trace(action_data)
                 return True
         return False
 
