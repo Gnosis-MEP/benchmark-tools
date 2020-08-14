@@ -51,6 +51,13 @@ If either `event_timeout` or `forced_stop_timeout_limit` are reached then the lo
 
 This allows for example, to wait until 10 seconds have passed since the last frame was published in the system.
 
+#### wait_count_event_trace
+Runs a while loop were it waits `wait_retry_time` seconds before checking if total of event traces for the `service` with `operation` has reached the `event_count` total.
+`forced_stop_timeout_limit` is the timeout for the whole action without considering the event trace, this is to avoid a forever running action.
+
+If either `event_count` or `forced_stop_timeout_limit` are reached then the loop exits and the action is done.
+
+This allows for example, to wait until the first event is published in the system.
 
 ## Task_add_publisher
 This task is used to register a publisher.
