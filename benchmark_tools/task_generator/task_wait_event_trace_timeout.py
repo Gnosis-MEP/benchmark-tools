@@ -27,7 +27,10 @@ class WaitEventTraceTimeuot(BaseTask):
             start_mm_timestamp=last_seconds_mm_ts, operation=operation, service=service, limit=limit)
         traces_url = f'{self.jaeger_api_host}/{end_point}'
         req = requests.get(traces_url)
-        traces = req.json()
+        try:
+            traces = req.json()
+        except:
+            return self.get_traces_last_seconds(service, operation, lookback_seconds * 3, limit=1)
         return traces
 
     def wait_timeout_event_trace(self, action_data):
