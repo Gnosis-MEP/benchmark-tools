@@ -92,9 +92,11 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         return functools.reduce(lambda a, b: a + b, values) / len(values)
 
     def metris_avg_and_std(self, metric_name, values):
+        avg = self.calculate_average(values) if len(values) > 1 else values[0]
+        std = statistics.stdev(values) if len(values) > 1 else 0
         return {
-            f'{metric_name}_avg': self.calculate_average(values),
-            f'{metric_name}_std': statistics.stdev(values),
+            f'{metric_name}_avg': avg,
+            f'{metric_name}_std': std,
         }
 
     def calculate_metrics(self, readings):
