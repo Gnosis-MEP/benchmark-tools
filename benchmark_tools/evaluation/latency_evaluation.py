@@ -43,6 +43,7 @@ class LatencyEvaluation(BaseEvaluation):
         return {
             'latency_avg': latency_avg,
             'latency_std': latency_std,
+            'data_points': len(latencies),
         }
 
     def run(self):

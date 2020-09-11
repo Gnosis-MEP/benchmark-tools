@@ -35,6 +35,7 @@ class EvaluationTestCase(unittest.TestCase):
         self.assertTrue(mocked_get.called)
 
         expected_ret = {
+            'data_points': 2,
             'latency_avg': 1,
             'latency_std': 2
         }

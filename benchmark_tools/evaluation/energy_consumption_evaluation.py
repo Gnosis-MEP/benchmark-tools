@@ -103,14 +103,19 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         voltages = []
         freqs = []
         real_energies = []
+        total_consumption = 0
         for reading in readings:
             voltages.append(reading['voltage'])
             freqs.append(reading['frequency'])
             real_energies.append(reading['real_energy'])
+            total_consumption += 10 * reading['real_energy']
+
         results = {}
         results.update(self.metris_avg_and_std('voltage', voltages))
         results.update(self.metris_avg_and_std('frequency', freqs))
         results.update(self.metris_avg_and_std('real_energy', real_energies))
+        results.update({'data_points': len(real_energies)})
+        results.update({'total_consumption': total_consumption})
         return results
 
     def order_traces(self, traces):
