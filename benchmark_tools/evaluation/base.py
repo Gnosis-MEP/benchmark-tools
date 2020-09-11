@@ -33,7 +33,11 @@ class BaseEvaluation():
             threshold_function_data = self.get_regexp_threshold_function(metric)
 
         if not threshold_function_data:
-            raise Exception(f'No threshold function for {metric}.')
+            self.logger.error(f'No threshold function for {metric}. Applying simple "Always true" validation.')
+
+            default_threshold_str = "lambda x: True"
+            threshold_function_data = {'function': eval(default_threshold_str), 'str': default_threshold_str}
+
         threshold_function = threshold_function_data['function']
         threshold_function_str = threshold_function_data['str']
         threshold_ok = threshold_function(value)
