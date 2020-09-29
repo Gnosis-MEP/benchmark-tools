@@ -176,7 +176,7 @@
                 "kwargs":{
                     "jaeger_api_host": "http://172.17.0.1:16686",
                     "threshold_functions": {
-                        "throughput": "lambda x: x > 10"
+                        "throughput_fps": "lambda x: x > 10"
                     },
                     "logging_level": "DEBUG"
                 }
