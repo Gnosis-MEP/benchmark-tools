@@ -135,6 +135,20 @@ Gets the all the event traces of a given `service` and `operation` and exports i
 The output event traces json file is named as `{service}-{operation}.json`.
 This file can later be uploaded in Jaeger UI to view the exported event traces.
 
+## Task_add_mocked_stream_publishing
+This task is used to publish mocked events into specific redis streams following a given event template and FPS rate.
+
+### Kwargs
+
+ * redis_address: Target system Redis address
+ * redis_port: Target system redis port
+ * max_stream_length: Max size of the streams when writting to them (if null is passed than it will not try to trim the stream when writing)
+ * logging_level: Logging level
+
+### Actions
+#### publishToStream
+Publishes new events based on the `event_template` dict into the `stream_key` stream at the `fps` rate specified. Stops if `max_events` numbers or until `max_time` is reached, and at least one of this limits needs to be defined. The events ID are  created based on the event index and a random generated id for each action process.
+
 
 # Evaluations
 
