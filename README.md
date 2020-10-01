@@ -199,9 +199,7 @@ Evaluates the end-to-end latency of the system by checking the event traces that
 
 
 ## Throughput_evaluation
-Evaluates the end-to-end throughput of the system by checking the event traces that are outputed to the user, that is: leave the Forwarder.
-This does not consider the events that are dropped.
-It calculates the ent-to-end throughput by dividing 1 for the end-to-end latency of the system.
+Evaluates the overall system's throughput (in FPS) by checking all the event traces in the system and dividing that by the total processing time (starting from the first event trace, untill the end of the last one).
 ### Kwargs
  * jaeger_api_host: Target system jaeger address and port.
  * logging_level: Logging level
@@ -209,7 +207,7 @@ It calculates the ent-to-end throughput by dividing 1 for the end-to-end latency
 
 ### Metrics
 
-* throughput_avg: Average for end-to-end throughput in Frames Per Second (FPS).
+* throughput_fps: Throughput in Frames Per Second (FPS).
 
 
 ## Per_service_speed_evaluation
