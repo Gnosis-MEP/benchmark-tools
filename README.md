@@ -150,6 +150,20 @@ This task is used to publish mocked events into specific redis streams following
 Publishes new events based on the `event_template` dict into the `stream_key` stream at the `fps` rate specified. Stops if `max_events` numbers or until `max_time` is reached, and at least one of this limits needs to be defined. The events ID are  created based on the event index and a random generated id for each action process.
 
 
+## Task_add_mocked_stream_consumer
+This task is used to generate mocked redis stream consumers with a given processing time.
+
+### Kwargs
+
+ * redis_address: Target system Redis address
+ * redis_port: Target system redis port
+ * logging_level: Logging level
+
+### Actions
+#### publishToStream
+Publishes new events based on the `event_template` dict into the `stream_key` stream at the `fps` rate specified. Stops if `max_events` numbers or until `max_time` is reached, and at least one of this limits needs to be defined. The events ID are  created based on the event index and a random generated id for each action process.
+
+
 # Evaluations
 
 ## Energy_consumption_evaluation
