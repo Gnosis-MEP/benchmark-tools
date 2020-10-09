@@ -44,7 +44,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
 
     def event_trace_for_method_with_event_data(
             self, method, method_args, method_kwargs, get_event_tracer=False, tracer_tags=None):
-        span_name = method.__name__
+        span_name = 'consume_stream'
         if tracer_tags is None:
             tracer_tags = {}
 
