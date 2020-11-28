@@ -90,7 +90,7 @@ The output event json line file is named as `subscription_{subscriber_id}-{query
 This file can later be used by any other task or evaluation that depends on events received by the subscriber, eg: accuracy evaluation.
 
 ## Task_add_queries
-This task is used to register a publisher.
+This task is used to register a subscriber query.
 ### Kwargs
 
  * redis_address: Target system Redis address
@@ -168,21 +168,22 @@ It will also send the event traces to jaeger. The service name is set to `Mocked
 # Evaluations
 
 ## Energy_consumption_evaluation
-Evaluates the total energy consumption during a time frame of a given energy device through the use of the Energy Grid webservice api.
+Evaluates the total energy consumption during a time frame of a given energy device list through the use of the Energy Grid webservice api.
 ### Kwargs
  * energy_grid_api_host: Energy grid webservice address and port.
  * start_time: Initial timestamp (float) or the string "jaeger" (Uses jaeger to get the timestamp of the first event in the ClientManager)
  * end_time: Final timestamp (float) or the string "now" (uses current timestamp) or the string "jaeger" (Uses jaeger to get the timestamp of the last event in the ClientManager)
  * jaeger_api_host: (Optional) Target system jaeger address and port. Used required when `jaeger` is defined as a timestamp source.
- * energy_device_id: Energy device ID (4424 for Dedicated Server, 1507 for Jetson, 7246 for Raspberry Pi)
+ * energy_device_id: list of Energy device ID separeted by ";" (4424 for Dedicated Server, 1507 for Jetson, 7246 for Raspberry Pi, eg: "4424;1507")
+ * save_readings_on: Template of a file path to save each device energy readings. eg 'energy_readings_{}.json'
  * logging_level: Logging level
  * threshold_functions: Dictionary defining threshold functions for each metric name (or regexp of metric name).
 
 ### Metrics
 
-* real_energy_(avg|std): Average and standard deviation for energy consumption in watts
-* voltage_(avg|std): Average and standard deviation for the voltage
-* frequency_(avg|std): Average and standard deviation for the frequency
+* id_{device_id}-real_energy_(avg|std): Average and standard deviation for energy consumption in watts
+* id_{device_id}-voltage_(avg|std): Average and standard deviation for the voltage
+* id_{device_id}-frequency_(avg|std): Average and standard deviation for the frequency
 
 ## Sub_accuracy_evaluation
 Evaluates the subscription accuracy for a specific class label.

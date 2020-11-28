@@ -27,8 +27,18 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         self.energy_grid_api_host = kwargs.get('energy_grid_api_host')
         self.start_time = kwargs['start_time']
         self.end_time = kwargs['end_time']
-        self.energy_device_id = kwargs['energy_device_id']
         self.save_readings_on = kwargs.get('save_readings_on', None)
+        self.energy_device_id = kwargs['energy_device_id']
+        if ';' in self.energy_device_id:
+            self.energy_device_id_list = self.energy_device_id.split(';')
+            self.energy_device_id = self.energy_device_id[0]
+        else:
+            self.energy_device_id_list = [self.energy_device_id]
+        if self.save_readings_on is not None:
+            self.save_readings_on_list = [
+                self.save_readings_on.format(device_id) for device_id in self.energy_device_id_list
+            ]
+
         self.setup()
 
     def setup(self):
@@ -71,21 +81,25 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         return trace_timestamp
 
     def get_readings_from_webservice(self, start_timestamp, end_timestamp, device_id):
-        end_point_url = f'{self.energy_grid_api_host}{self.ENERGY_GRID_WEBSERVICE_GET_ENERGY_ENDPOINT}'.format(
-            start_timestamp=start_timestamp,
-            end_timestamp=end_timestamp,
-            device_id=device_id
-        )
-        req = requests.get(end_point_url)
-        readings = req.json()['readings']
+        # end_point_url = f'{self.energy_grid_api_host}{self.ENERGY_GRID_WEBSERVICE_GET_ENERGY_ENDPOINT}'.format(
+        #     start_timestamp=start_timestamp,
+        #     end_timestamp=end_timestamp,
+        #     device_id=device_id
+        # )
+        # req = requests.get(end_point_url)
+        # readings = req.json()['readings']
+        readings = [
+            {'voltage': int(device_id), 'frequency': int(device_id), 'real_energy': int(device_id)},
+            {'voltage': int(device_id), 'frequency': int(device_id), 'real_energy': int(device_id)}
+        ]
         return readings
 
     def get_energy_readings(self):
         return self.get_readings_from_webservice(self.start_time, self.end_time, self.energy_device_id)
 
-    def save_readings(self, readings):
-        self.logger.info(f'Saving energy readings on: {self.save_readings_on}')
-        with open(self.save_readings_on, 'w') as f:
+    def save_readings(self, readings, device_save_readings_on):
+        self.logger.info(f'Saving energy readings on: {device_save_readings_on}')
+        with open(device_save_readings_on, 'w') as f:
             json.dump(readings, f, indent=4)
 
     def calculate_average(self, values):
@@ -99,7 +113,7 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
             f'{metric_name}_std': std,
         }
 
-    def calculate_metrics(self, readings):
+    def calculate_metrics(self, readings, device_id):
         voltages = []
         freqs = []
         real_energies = []
@@ -111,11 +125,11 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
             total_consumption += 10 * reading['real_energy']
 
         results = {}
-        results.update(self.metris_avg_and_std('voltage', voltages))
-        results.update(self.metris_avg_and_std('frequency', freqs))
-        results.update(self.metris_avg_and_std('real_energy', real_energies))
-        results.update({'data_points': len(real_energies)})
-        results.update({'total_consumption': total_consumption})
+        results.update(self.metris_avg_and_std(f'id_{device_id}-voltage', voltages))
+        results.update(self.metris_avg_and_std(f'id_{device_id}-frequency', freqs))
+        results.update(self.metris_avg_and_std(f'id_{device_id}-real_energy', real_energies))
+        results.update({f'id_{device_id}-data_points': len(real_energies)})
+        results.update({f'id_{device_id}-total_consumption': total_consumption})
         return results
 
     def order_traces(self, traces):
@@ -125,16 +139,21 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
     def run(self):
         start_datetime = datetime.datetime.fromtimestamp(self.start_time)
         end_datetime = datetime.datetime.fromtimestamp(self.end_time)
-        self.logger.debug(
-            f'Evaluation for Energy Usage of device {self.energy_device_id}'
-            f' from {start_datetime}({self.start_time})'
-            f' to {end_datetime}({self.end_time}) is running...'
-        )
-        readings = self.get_energy_readings()
-        self.logger.debug(f'Total Energy Consumption values to be analysed: {len(readings)}')
-        if self.save_readings_on is not None:
-            self.save_readings(readings)
-        results = self.calculate_metrics(readings)
+        results = {}
+        for device_index, device_id in enumerate(self.energy_device_id_list):
+            device_id = int(device_id)
+            self.energy_device_id = device_id
+            self.logger.debug(
+                f'Evaluation for Energy Usage of device {device_id}'
+                f' from {start_datetime}({self.start_time})'
+                f' to {end_datetime}({self.end_time}) is running...'
+            )
+            readings = self.get_energy_readings()
+            self.logger.debug(f'Total Energy Consumption values to be analysed: {len(readings)}')
+            if self.save_readings_on is not None:
+                device_save_readings_on = self.save_readings_on_list[device_index]
+                self.save_readings(readings, device_save_readings_on)
+            results.update(self.calculate_metrics(readings, device_id))
         return self.verify_thresholds(results)
 
 
@@ -144,7 +163,7 @@ def run(energy_grid_api_host, start_time, energy_device_id, threshold_functions,
         energy_grid_api_host=energy_grid_api_host,
         start_time=start_time,
         end_time=end_time,
-        energy_device_id=int(energy_device_id),
+        energy_device_id=energy_device_id,
         save_readings_on=save_readings_on,
         threshold_functions=threshold_functions,
         logging_level=logging_level
@@ -160,11 +179,11 @@ if __name__ == '__main__':
     kwargs = {
         "energy_grid_api_host": "http://localhost:5000",
         "jaeger_api_host": "http://localhost:16686",
-        "start_time": "jaeger",
-        "end_time": "jaeger",
+        "start_time": "0",
+        "end_time": "1",
         # "energy_device_id": "1507",4424
-        "save_readings_on": 'energy_readings.json',
-        "energy_device_id": "4424",
+        "save_readings_on": 'energy_readings_{}.json',
+        "energy_device_id": "4424;1507",
         "threshold_functions": {
             ".*": "lambda x: x < 300",
             "real_energy_avg": "lambda x: x < 75",
