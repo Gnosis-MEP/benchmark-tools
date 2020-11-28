@@ -81,17 +81,13 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         return trace_timestamp
 
     def get_readings_from_webservice(self, start_timestamp, end_timestamp, device_id):
-        # end_point_url = f'{self.energy_grid_api_host}{self.ENERGY_GRID_WEBSERVICE_GET_ENERGY_ENDPOINT}'.format(
-        #     start_timestamp=start_timestamp,
-        #     end_timestamp=end_timestamp,
-        #     device_id=device_id
-        # )
-        # req = requests.get(end_point_url)
-        # readings = req.json()['readings']
-        readings = [
-            {'voltage': int(device_id), 'frequency': int(device_id), 'real_energy': int(device_id)},
-            {'voltage': int(device_id), 'frequency': int(device_id), 'real_energy': int(device_id)}
-        ]
+        end_point_url = f'{self.energy_grid_api_host}{self.ENERGY_GRID_WEBSERVICE_GET_ENERGY_ENDPOINT}'.format(
+            start_timestamp=start_timestamp,
+            end_timestamp=end_timestamp,
+            device_id=device_id
+        )
+        req = requests.get(end_point_url)
+        readings = req.json()['readings']
         return readings
 
     def get_energy_readings(self):
