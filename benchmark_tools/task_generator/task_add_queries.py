@@ -35,12 +35,11 @@ class TaskAddQueries(BaseTask):
             event_data = {
                 'query': query_data['query'],
                 'subscriber_id': query_data['subscriber_id'],
-                'query_num': query_data['query_id'],
             }
         else:
             event_data = {
                 'subscriber_id': query_data['subscriber_id'],
-                'query_num': query_data['query_id'],
+                'query_name': query_data['query_id'],
             }
         return event_data
 
