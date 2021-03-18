@@ -29,6 +29,24 @@ class ThroughputEvaluation(BaseEvaluation):
         ordered_traces = sorted(traces, key=lambda t: t['spans'][0]['startTime'])
         return ordered_traces
 
+    def order_traces_by_last(self, traces):
+        def span_endtime_key(span):
+            start_time = span['startTime']
+            duration = span['duration']
+            return start_time + duration
+
+        def trace_spans_endtime_key(trace):
+            ordered_spans = sorted(trace['spans'], key=span_endtime_key)
+            trace['spans'] = ordered_spans
+            last_span = ordered_spans[-1]
+
+            start_time = last_span['startTime']
+            duration = last_span['duration']
+            trace_last_span_time = start_time + duration
+            return trace_last_span_time
+        ordered_traces = sorted(traces, key=trace_spans_endtime_key)
+        return ordered_traces
+
     def get_trace_latency(self, trace):
         first_start_time = trace['spans'][0]['startTime']
         last_start_time = trace['spans'][-1]['startTime']
@@ -38,12 +56,14 @@ class ThroughputEvaluation(BaseEvaluation):
         return total_trace_time_sec
 
     def get_initial_time(self, traces):
+        traces = self.order_traces(traces)
         first_trace = traces[0]
         first_start_time = first_trace['spans'][0]['startTime']
         return first_start_time
 
     def get_end_time(self, traces):
-        last_trace = traces[-1]
+        ordered_traces = self.order_traces_by_last(traces)
+        last_trace = ordered_traces[-1]
         last_start_time = last_trace['spans'][-1]['startTime']
         last_duration = last_trace['spans'][-1]['duration']
         return last_start_time + last_duration
@@ -62,7 +82,7 @@ class ThroughputEvaluation(BaseEvaluation):
 
     def run(self):
         self.logger.debug('Running Throughput Evaluation.')
-        traces = self.order_traces(self.get_traces())
+        traces = self.get_traces()
         result = self.calculate_throughput_metrics(traces)
         return self.verify_thresholds(result)
 
