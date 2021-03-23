@@ -53,8 +53,10 @@ class TaskAddBackgroundSubscriberEventsExporter(BaseTask):
             action = action_data.get('action', '')
             if action == 'exportSubscribeToQuery':
                 subscriber_id = action_data['subscriber_id']
+                stream_key = action_data.get('stream_key')
                 query_num = action_data['query_num']  # this is weird, but again...its how the system is right now...
-                stream_key = hashlib.md5(f"{subscriber_id}_{query_num}".encode('utf-8')).hexdigest()
+                if stream_key is None:
+                    stream_key = hashlib.md5(f"{subscriber_id}_{query_num}".encode('utf-8')).hexdigest()
                 output_file = os.path.join(self.output_path, f'subscription_{subscriber_id}-{query_num}.jl')
                 self.logger.info(
                     f'Subscribing for {subscriber_id}-{query_num} at stream "{stream_key}" and outputing to Json lines file: {output_file}'
