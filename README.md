@@ -84,9 +84,9 @@ This task is used to register a background subscription query that will export a
 
 ### Actions
 #### exportSubscribeToQuery
-Starts a background thread for a subscriber that will listen to the redis stream based on `subscriber_id` and `query_num`.
+Starts a background thread for a subscriber that will listen to the redis stream based on `subscriber_id` and `stream_key`.
 Each event received in by this subscriber gets saved as a JSON in a new line in the output file in the `output_path`.
-The output event json line file is named as `subscription_{subscriber_id}-{query_num}.jl`.
+The output event json line file is named as `subscription_{subscriber_id}-{stream_key}.jl`.
 This file can later be used by any other task or evaluation that depends on events received by the subscriber, eg: accuracy evaluation.
 
 ## Task_add_queries
