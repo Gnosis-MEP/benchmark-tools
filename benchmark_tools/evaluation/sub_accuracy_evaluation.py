@@ -22,11 +22,12 @@ class COCOSubscriptionAccuracyEvaluation(BaseEvaluation):
         data = {}
         with open(subscription_jl, 'r') as jl_file:
             for json_line in jl_file.readlines():
-                event = json.loads(json_line)
-                frame_index = event['frame_index']
-                image_name = self.frame_index_mapping[frame_index]
-                image_id = self.image_name_to_id[image_name]
-                data[image_id] = event
+                vekg_stream = json.loads(json_line)
+                for event in vekg_stream:
+                    frame_index = event['frame_index']
+                    image_name = self.frame_index_mapping[frame_index]
+                    image_id = self.image_name_to_id[image_name]
+                    data[image_id] = event
         return data
 
     def get_image_ids_to_categories_mapping(self, annotations):
