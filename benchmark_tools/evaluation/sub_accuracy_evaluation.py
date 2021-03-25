@@ -22,7 +22,7 @@ class COCOSubscriptionAccuracyEvaluation(BaseEvaluation):
         data = {}
         with open(subscription_jl, 'r') as jl_file:
             for json_line in jl_file.readlines():
-                vekg_stream = json.loads(json_line)
+                vekg_stream = json.loads(json_line).get('vekg_stream', [])
                 for event in vekg_stream:
                     frame_index = event['frame_index']
                     image_name = self.frame_index_mapping[frame_index]
