@@ -27,9 +27,9 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         super(EnergyConsumptionEvaluation, self).__init__(*args, **kwargs)
         self.jaeger_api_host = kwargs.get('jaeger_api_host')
 
-        self.jaeger_traces_configs = kwargs.get(
-            'jaeger_traces_configs',
-            {
+        self.jaeger_traces_configs = kwargs.get('jaeger_traces_configs', None)
+        if self.jaeger_traces_configs is None:
+            self.jaeger_traces_configs = {
                 'start': {
                     'service': 'ClientManager',
                     'operation': 'process_action',
@@ -41,7 +41,6 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
                     'tags': {"process-action-name": "delQuery"}
                 }
             }
-        )
         self.energy_grid_api_host = kwargs.get('energy_grid_api_host')
         self.start_time = kwargs['start_time']
         self.end_time = kwargs['end_time']
