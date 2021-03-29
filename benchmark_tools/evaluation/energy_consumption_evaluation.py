@@ -20,10 +20,28 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         'limit=700000000&lookback=10h&maxDuration&minDuration&'
         'service={service}&operation={operation}'
     )
+    JAEGER_TAGS_URL_FORMAT = '&tags={tags}'
+    JAEGER_TRACES_URL_WITH_TAGS_FORMAT = JAEGER_TRACES_URL_FORMAT + JAEGER_TAGS_URL_FORMAT
 
     def __init__(self, *args, **kwargs):
         super(EnergyConsumptionEvaluation, self).__init__(*args, **kwargs)
         self.jaeger_api_host = kwargs.get('jaeger_api_host')
+
+        self.jaeger_traces_configs = kwargs.get(
+            'jaeger_traces_configs',
+            {
+                'start': {
+                    'service': 'ClientManager',
+                    'operation': 'process_action',
+                    'tags': {"process-action-name": "addQuery"}
+                },
+                'end': {
+                    'service': 'ClientManager',
+                    'operation': 'process_action',
+                    'tags': {"process-action-name": "delQuery"}
+                }
+            }
+        )
         self.energy_grid_api_host = kwargs.get('energy_grid_api_host')
         self.start_time = kwargs['start_time']
         self.end_time = kwargs['end_time']
@@ -59,13 +77,23 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
                 self.end_time = float(self.end_time)
 
     def get_jaeger_timestamp(self, first=True):
-        service = 'ClientManager'
-        operation = 'process_action'
+        configs_key = 'start' if first else 'end'
+        service = self.jaeger_traces_configs.get(configs_key).get('service')
+        operation = self.jaeger_traces_configs.get(configs_key).get('operation')
+        tags = self.jaeger_traces_configs.get(configs_key).get('tags')
+
         self.logger.info(
             f'Geting event trace ts (start={first})'
             f' from Jaeger "{self.jaeger_api_host}" first "{operation}" on service "{service}"'
         )
-        end_point = self.JAEGER_TRACES_URL_FORMAT.format(service=service, operation=operation)
+        if tags is None:
+            end_point = self.JAEGER_TRACES_URL_FORMAT.format(
+                service=service, operation=operation)
+        else:
+            tags_json = json.dumps(tags)
+            end_point = self.JAEGER_TRACES_URL_WITH_TAGS_FORMAT.format(
+                service=service, operation=operation, tags=tags_json)
+
         traces_url = f'{self.jaeger_api_host}/{end_point}'
         req = requests.get(traces_url)
         traces = req.json()['data']
@@ -153,9 +181,20 @@ class EnergyConsumptionEvaluation(BaseEvaluation):
         return self.verify_thresholds(results)
 
 
-def run(energy_grid_api_host, start_time, energy_device_id, threshold_functions, logging_level, save_readings_on=None, end_time=None, jaeger_api_host=None):
+def run(
+        energy_grid_api_host,
+        start_time,
+        energy_device_id,
+        threshold_functions,
+        logging_level,
+        save_readings_on=None,
+        end_time=None,
+        jaeger_api_host=None,
+        jaeger_traces_configs=None):
+
     evaluation = EnergyConsumptionEvaluation(
         jaeger_api_host=jaeger_api_host,
+        jaeger_traces_configs=jaeger_traces_configs,
         energy_grid_api_host=energy_grid_api_host,
         start_time=start_time,
         end_time=end_time,
@@ -175,8 +214,22 @@ if __name__ == '__main__':
     kwargs = {
         "energy_grid_api_host": "http://localhost:5000",
         "jaeger_api_host": "http://localhost:16686",
-        "start_time": "0",
-        "end_time": "1",
+
+        "jaeger_traces_configs": {
+            'start': {
+                'service': 'ClientManager',
+                'operation': 'process_action',
+                'tags': {"process-action-name": "addQuery"}
+            },
+            'end': {
+                'service': 'ClientManager',
+                'operation': 'process_action',
+                'tags': {"process-action-name": "delQuery"}
+            }
+        },
+
+        "start_time": "jaeger",
+        "end_time": "jaeger",
         # "energy_device_id": "1507",4424
         "save_readings_on": 'energy_readings_{}.json',
         "energy_device_id": "4424;1507",

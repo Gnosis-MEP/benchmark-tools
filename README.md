@@ -174,6 +174,7 @@ Evaluates the total energy consumption during a time frame of a given energy dev
  * start_time: Initial timestamp (float) or the string "jaeger" (Uses jaeger to get the timestamp of the first event in the ClientManager)
  * end_time: Final timestamp (float) or the string "now" (uses current timestamp) or the string "jaeger" (Uses jaeger to get the timestamp of the last event in the ClientManager)
  * jaeger_api_host: (Optional) Target system jaeger address and port. Used required when `jaeger` is defined as a timestamp source.
+ * jaeger_traces_configs: (Optional) Dictionary with the information used for fiding the start and and time. Use is required when `jaeger` is defined as a timestamp source. Example of value: `{"start": {"service": "ClientManager", "operation": "process_action", "tags": {"process-action-name": "addQuery"}}, "end": {"service": "ClientManager", "operation": "process_action", "tags": {"process-action-name": "delQuery"}}}`. This will consider the start time of the evaluation as the moment the first `addQuery` event is registered, and ending with the last `delQuery` operation.
  * energy_device_id: list of Energy device ID separeted by ";" (4424 for Dedicated Server, 1507 for Jetson, 7246 for Raspberry Pi, eg: "4424;1507")
  * save_readings_on: Template of a file path to save each device energy readings. eg 'energy_readings_{}.json'
  * logging_level: Logging level
