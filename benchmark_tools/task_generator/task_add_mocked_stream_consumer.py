@@ -57,17 +57,22 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 scope.span.set_tag(tag, value)
             method(*method_args, **method_kwargs)
 
-    def process_data_event(self, event_data, json_msg):
+    def process_data_event(self, event_data, json_msg, processing_time, time_before_deserialization):
+        current_processing_time = datetime.datetime.now().timestamp() - time_before_deserialization
+        missing_processing_time = processing_time - current_processing_time
+        if missing_processing_time > 0:
+            time.sleep(missing_processing_time)
         # this is a fake method
-        pass
 
-    def process_data_event_wrapper(self, event_data, json_msg):
+    def process_data_event_wrapper(self, event_data, json_msg, processing_time, time_before_deserialization):
         self.event_trace_for_method_with_event_data(
             method=self.process_data_event,
             method_args=(),
             method_kwargs={
                 'event_data': event_data,
-                'json_msg': json_msg
+                'json_msg': json_msg,
+                'processing_time': processing_time,
+                'time_before_deserialization': time_before_deserialization,
             },
             get_event_tracer=True,
             tracer_tags={
@@ -95,11 +100,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 event_id, json_msg = event_tuple
                 time_before_deserialization = datetime.datetime.now().timestamp()
                 event_data = self.default_event_deserializer(json_msg)
-                self.process_data_event_wrapper(event_data, json_msg)
-                current_processing_time = datetime.datetime.now().timestamp() - time_before_deserialization
-                missing_processing_time = processing_time - current_processing_time
-                if missing_processing_time > 0:
-                    time.sleep(missing_processing_time)
+                self.process_data_event_wrapper(event_data, json_msg, processing_time, time_before_deserialization)
                 total_events += 1
                 self.logger.debug(f'Consumed new event: {json_msg}')
 
