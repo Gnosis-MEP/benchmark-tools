@@ -50,8 +50,8 @@ class TaskAddBackgroundMockedStream(BaseTask):
             missing_event_interval = expected_event_pub_time - time_since_last_event
             time.sleep(missing_event_interval * 0.85)
 
-    def publish_events(self, stream_key, fps, event_template, max_events=None, max_time=None):
-        proc_random_id = self.process_random_id()
+    def publish_events(self, pub_id, stream_key, fps, event_template, max_events=None, max_time=None):
+        proc_random_id = pub_id
         stream = self.stream_factory.create(
             stream_key, stype='streamOnly'
         )
@@ -77,10 +77,10 @@ class TaskAddBackgroundMockedStream(BaseTask):
             f'Actual FPS: {total_events/total_time}'
         )
 
-    def background_publish_events(self, stream_key, fps, event_template, max_events, max_time):
+    def background_publish_events(self, pub_id, stream_key, fps, event_template, max_events, max_time):
         pub_thread = threading.Thread(
             target=self.publish_events,
-            args=(stream_key, fps, event_template),
+            args=(pub_id, stream_key, fps, event_template),
             kwargs={'max_events': max_events, 'max_time': max_time},
             daemon=True
         )
@@ -97,12 +97,14 @@ class TaskAddBackgroundMockedStream(BaseTask):
                 event_template = action_data['event_template']
                 max_events = action_data.get('max_events')
                 max_time = action_data.get('max_time')
+                pub_id = action_data.get('pub_id', self.process_random_id())
                 if max_time is None and max_events is None:
                     raise Exception('max_events and max_time are undefined. At least one should be defined.')
-                self.logger.info(
-                    f'Publishing "{event_template}" events into {stream_key} stream at {fps} FPS. With max_events={max_events} and max_time={max_time}'
-                )
-                self.background_publish_events(stream_key, fps, event_template, max_events, max_time)
+                self.logger.info((
+                    f'"{pub_id}" Publishing "{event_template}" events into'
+                    f' {stream_key} stream at {fps} FPS. With max_events={max_events} and max_time={max_time}'
+                ))
+                self.background_publish_events(pub_id, stream_key, fps, event_template, max_events, max_time)
                 return True
         return False
 
