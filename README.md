@@ -84,9 +84,9 @@ This task is used to register a background subscription query that will export a
 
 ### Actions
 #### exportSubscribeToQuery
-Starts a background thread for a subscriber that will listen to the redis stream based on `subscriber_id` and `query_num`.
+Starts a background thread for a subscriber that will listen to the redis stream based on `subscriber_id` and `stream_key`.
 Each event received in by this subscriber gets saved as a JSON in a new line in the output file in the `output_path`.
-The output event json line file is named as `subscription_{subscriber_id}-{query_num}.jl`.
+The output event json line file is named as `subscription_{subscriber_id}-{stream_key}.jl`.
 This file can later be used by any other task or evaluation that depends on events received by the subscriber, eg: accuracy evaluation.
 
 ## Task_add_queries
@@ -147,7 +147,7 @@ This task is used to publish mocked events into specific redis streams following
 
 ### Actions
 #### publishToStream
-Publishes new events based on the `event_template` dict into the `stream_key` stream at the `fps` rate specified. Stops if `max_events` numbers or until `max_time` is reached, and at least one of this limits needs to be defined. The events ID are  created based on the event index and a random generated id for each action process.
+Publishes new events based on the `event_template` dict into the `stream_key` stream at the `fps` rate specified. Stops if `max_events` numbers or until `max_time` is reached, and at least one of this limits needs to be defined. The events ID are  created based on the event index and a `pub_id` (or a random id if not defined) for each action process.
 
 
 ## Task_add_mocked_stream_consumer
@@ -174,6 +174,7 @@ Evaluates the total energy consumption during a time frame of a given energy dev
  * start_time: Initial timestamp (float) or the string "jaeger" (Uses jaeger to get the timestamp of the first event in the ClientManager)
  * end_time: Final timestamp (float) or the string "now" (uses current timestamp) or the string "jaeger" (Uses jaeger to get the timestamp of the last event in the ClientManager)
  * jaeger_api_host: (Optional) Target system jaeger address and port. Used required when `jaeger` is defined as a timestamp source.
+ * jaeger_traces_configs: (Optional) Dictionary with the information used for fiding the start and and time. Use is required when `jaeger` is defined as a timestamp source. Example of value: `{"start": {"service": "ClientManager", "operation": "process_action", "tags": {"process-action-name": "addQuery"}}, "end": {"service": "ClientManager", "operation": "process_action", "tags": {"process-action-name": "delQuery"}}}`. This will consider the start time of the evaluation as the moment the first `addQuery` event is registered, and ending with the last `delQuery` operation.
  * energy_device_id: list of Energy device ID separeted by ";" (4424 for Dedicated Server, 1507 for Jetson, 7246 for Raspberry Pi, eg: "4424;1507")
  * save_readings_on: Template of a file path to save each device energy readings. eg 'energy_readings_{}.json'
  * logging_level: Logging level

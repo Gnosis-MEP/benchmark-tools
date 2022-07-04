@@ -15,7 +15,7 @@ ipdb = "*"
 python-decouple = "==3.1"
 benchmark-tools = {path = ".",editable = true}
 requests = "==2.22.0"
-event-service-utils = "==1.1.1"
+event-service-utils = "==1.6.0"
 
 [requires]
 python_version = "3.6"

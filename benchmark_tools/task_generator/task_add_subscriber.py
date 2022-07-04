@@ -21,7 +21,7 @@ class TaskAddBackgroundSubscriberEventsExporter(BaseTask):
         with open(output_file, 'a') as f:
             f.write(event_json + '\n')
 
-    def subscription_export(self, subscriber_id, query_num, stream_key, output_file):
+    def subscription_export(self, subscriber_id, stream_key, output_file):
         subscriber_query_output_stream = self.stream_factory.create(
             stream_key, stype='streamAndConsumer'
         )
@@ -38,10 +38,10 @@ class TaskAddBackgroundSubscriberEventsExporter(BaseTask):
                     self.logger.error(f'Error processing {json_msg}:')
                     self.logger.exception(e)
 
-    def background_subscription_export(self, subscriber_id, query_num, stream_key, output_file):
+    def background_subscription_export(self, subscriber_id, stream_key, output_file):
         subscriber_thread = threading.Thread(
             target=self.subscription_export,
-            args=(subscriber_id, query_num, stream_key, output_file,),
+            args=(subscriber_id, stream_key, output_file,),
             daemon=True
         )
         subscriber_thread.start()
@@ -53,13 +53,14 @@ class TaskAddBackgroundSubscriberEventsExporter(BaseTask):
             action = action_data.get('action', '')
             if action == 'exportSubscribeToQuery':
                 subscriber_id = action_data['subscriber_id']
-                query_num = action_data['query_num']  # this is weird, but again...its how the system is right now...
-                stream_key = hashlib.md5(f"{subscriber_id}_{query_num}".encode('utf-8')).hexdigest()
-                output_file = os.path.join(self.output_path, f'subscription_{subscriber_id}-{query_num}.jl')
+                stream_key = action_data['stream_key']
+                # if stream_key is None:
+                #     stream_key = hashlib.md5(f"{subscriber_id}_{query_num}".encode('utf-8')).hexdigest()
+                output_file = os.path.join(self.output_path, f'subscription_{stream_key}.jl')
                 self.logger.info(
-                    f'Subscribing for {subscriber_id}-{query_num} at stream "{stream_key}" and outputing to Json lines file: {output_file}'
+                    f'Subscribing for {subscriber_id}: {stream_key} at stream "{stream_key}" and outputing to Json lines file: {output_file}'
                 )
-                self.background_subscription_export(subscriber_id, query_num, stream_key, output_file)
+                self.background_subscription_export(subscriber_id, stream_key, output_file)
                 return True
         return False
 
@@ -85,7 +86,7 @@ if __name__ == '__main__':
             {
                 "action": "exportSubscribeToQuery",
                 "subscriber_id": "3",
-                "query_num": "1"
+                "stream_key": "abc"
             }
         ]
     }

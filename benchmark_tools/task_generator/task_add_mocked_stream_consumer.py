@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import datetime
 import json
-import threading
+from multiprocessing import Process
 import time
 
 from opentracing.ext import tags
@@ -20,8 +20,8 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
         super(TaskAddBackgroundMockedStreamConsumer, self).__init__(*args, **kwargs)
         self.stream_factory = kwargs['stream_factory']
         self.tracer_configs = kwargs['tracer_configs']
-        self.tracer = init_tracer('MockedStreamConsumer', **self.tracer_configs)
-        self.threads = []
+        self.tracer = None
+        self.processes = []
 
     def get_event_tracer_kwargs(self, event_data):
         tracer_kwargs = {}
@@ -57,17 +57,22 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 scope.span.set_tag(tag, value)
             method(*method_args, **method_kwargs)
 
-    def process_data_event(self, event_data, json_msg):
+    def process_data_event(self, event_data, json_msg, processing_time, time_before_deserialization):
+        current_processing_time = datetime.datetime.now().timestamp() - time_before_deserialization
+        missing_processing_time = processing_time - current_processing_time
+        if missing_processing_time > 0:
+            time.sleep(missing_processing_time)
         # this is a fake method
-        pass
 
-    def process_data_event_wrapper(self, event_data, json_msg):
+    def process_data_event_wrapper(self, event_data, json_msg, processing_time, time_before_deserialization):
         self.event_trace_for_method_with_event_data(
             method=self.process_data_event,
             method_args=(),
             method_kwargs={
                 'event_data': event_data,
-                'json_msg': json_msg
+                'json_msg': json_msg,
+                'processing_time': processing_time,
+                'time_before_deserialization': time_before_deserialization,
             },
             get_event_tracer=True,
             tracer_tags={
@@ -83,6 +88,8 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
         return event_data
 
     def consume_events(self, stream_key, processing_time, max_time):
+        self.tracer = init_tracer('MockedStreamConsumer', **self.tracer_configs)
+
         stream = self.stream_factory.create(
             stream_key
         )
@@ -95,11 +102,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 event_id, json_msg = event_tuple
                 time_before_deserialization = datetime.datetime.now().timestamp()
                 event_data = self.default_event_deserializer(json_msg)
-                self.process_data_event_wrapper(event_data, json_msg)
-                current_processing_time = datetime.datetime.now().timestamp() - time_before_deserialization
-                missing_processing_time = processing_time - current_processing_time
-                if missing_processing_time > 0:
-                    time.sleep(missing_processing_time)
+                self.process_data_event_wrapper(event_data, json_msg, processing_time, time_before_deserialization)
                 total_events += 1
                 self.logger.debug(f'Consumed new event: {json_msg}')
 
@@ -111,14 +114,13 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
         )
 
     def background_consume_events(self, stream_key, processing_time, max_time):
-
-        pub_thread = threading.Thread(
+        pub_sub_proc = Process(
             target=self.consume_events,
             args=(stream_key, processing_time, max_time),
             daemon=True
         )
-        pub_thread.start()
-        self.threads.append(pub_thread)
+        pub_sub_proc.start()
+        self.processes.append(pub_sub_proc)
         return
 
     def process_action(self, action_data):
@@ -149,6 +151,19 @@ def run(actions, redis_address, redis_port, tracer_configs, logging_level):
 
 
 if __name__ == '__main__':
+    actions = []
+    for x in range(100):
+        if x % 3 == 0:
+            proc_time = 0.148148148
+        else:
+            proc_time = 0.12
+        action = {
+            "action": "consumeStream",
+            "stream_key": f"some-stream-key{x}",
+            "processing_time": proc_time,
+            "max_time": 10
+        }
+        actions.append(action)
     kwargs = {
         "redis_address": "localhost",
         "redis_port": "6379",
@@ -156,22 +171,9 @@ if __name__ == '__main__':
             "reporting_host": "localhost",
             "reporting_port": "6831",
         },
-        "logging_level": "DEBUG",
-        "actions": [
-            {
-                "action": "consumeStream",
-                "stream_key": "some-stream-key",
-                "processing_time": 0.1,
-                "max_time": 10
-            },
-            {
-                "action": "consumeStream",
-                "stream_key": "some-stream-key2",
-                "processing_time": 0.5,
-                "max_time": 10
-            }
-        ]
+        "logging_level": "ERROR",
+        "actions": actions
     }
     run(**kwargs)
     import time
-    time.sleep(70)
+    time.sleep(20)

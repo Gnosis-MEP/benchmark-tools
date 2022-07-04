@@ -2,7 +2,7 @@
 import datetime
 import json
 import time
-import threading
+from multiprocessing import Process
 import uuid
 
 from event_service_utils.streams.redis import RedisStreamFactory
@@ -15,7 +15,7 @@ class TaskAddBackgroundMockedStream(BaseTask):
     def __init__(self, *args, **kwargs):
         super(TaskAddBackgroundMockedStream, self).__init__(*args, **kwargs)
         self.stream_factory = kwargs['stream_factory']
-        self.threads = []
+        self.processes = []
 
     def should_keep_publishing(self, total_events, total_time, max_events, max_time):
         if max_events is not None:
@@ -50,8 +50,8 @@ class TaskAddBackgroundMockedStream(BaseTask):
             missing_event_interval = expected_event_pub_time - time_since_last_event
             time.sleep(missing_event_interval * 0.85)
 
-    def publish_events(self, stream_key, fps, event_template, max_events=None, max_time=None):
-        proc_random_id = self.process_random_id()
+    def publish_events(self, pub_id, stream_key, fps, event_template, max_events=None, max_time=None):
+        proc_random_id = pub_id
         stream = self.stream_factory.create(
             stream_key, stype='streamOnly'
         )
@@ -77,15 +77,15 @@ class TaskAddBackgroundMockedStream(BaseTask):
             f'Actual FPS: {total_events/total_time}'
         )
 
-    def background_publish_events(self, stream_key, fps, event_template, max_events, max_time):
-        pub_thread = threading.Thread(
+    def background_publish_events(self, pub_id, stream_key, fps, event_template, max_events, max_time):
+        pub_sub_proc = Process(
             target=self.publish_events,
-            args=(stream_key, fps, event_template),
+            args=(pub_id, stream_key, fps, event_template),
             kwargs={'max_events': max_events, 'max_time': max_time},
             daemon=True
         )
-        pub_thread.start()
-        self.threads.append(pub_thread)
+        pub_sub_proc.start()
+        self.processes.append(pub_sub_proc)
         return
 
     def process_action(self, action_data):
@@ -97,12 +97,14 @@ class TaskAddBackgroundMockedStream(BaseTask):
                 event_template = action_data['event_template']
                 max_events = action_data.get('max_events')
                 max_time = action_data.get('max_time')
+                pub_id = action_data.get('pub_id', self.process_random_id())
                 if max_time is None and max_events is None:
                     raise Exception('max_events and max_time are undefined. At least one should be defined.')
-                self.logger.info(
-                    f'Publishing "{event_template}" events into {stream_key} stream at {fps} FPS. With max_events={max_events} and max_time={max_time}'
-                )
-                self.background_publish_events(stream_key, fps, event_template, max_events, max_time)
+                self.logger.info((
+                    f'"{pub_id}" Publishing "{event_template}" events into'
+                    f' {stream_key} stream at {fps} FPS. With max_events={max_events} and max_time={max_time}'
+                ))
+                self.background_publish_events(pub_id, stream_key, fps, event_template, max_events, max_time)
                 return True
         return False
 
@@ -118,52 +120,35 @@ def run(actions, redis_address, redis_port, logging_level, max_stream_length):
 
 
 if __name__ == '__main__':
+    actions = []
+    for x in range(100):
+        action = {
+            "action": "publishToStream",
+            "stream_key": f"some-stream-key{x}",
+            "fps": 10,
+            # "max_events": 340,
+            "max_time": 14,
+            "event_template": {
+                "buffer_stream_key": "publisher-1-bufferstream-key",
+                "publisher_id": "publisher-id-1",
+                "source": "rtmp://172.17.0.1/live/mystream",
+                "image_url": "c8d025d3-8c3a-460c-a6f5-cabb7b179807",
+                "vekg": {},
+                "width": 640,
+                "height": 480,
+                "color_channels": "BGR",
+                "query_ids": [],
+            }
+        }
+        actions.append(action)
+
     kwargs = {
         "redis_address": "localhost",
         "redis_port": "6379",
         "logging_level": "INFO",
         "max_stream_length": None,
-        "actions": [
-            {
-                "action": "publishToStream",
-                "stream_key": "some-stream-key",
-                "fps": 120,
-                "max_events": 340,
-                # "max_time": 10,
-                "event_template": {
-                    "buffer_stream_key": "publisher-1-bufferstream-key",
-                    "publisher_id": "publisher-id-1",
-                    "source": "rtmp://172.17.0.1/live/mystream",
-                    "image_url": "c8d025d3-8c3a-460c-a6f5-cabb7b179807",
-                    "vekg": {},
-                    "width": 640,
-                    "height": 480,
-                    "color_channels": "BGR",
-                    "query_ids": [],
-                }
-
-            },
-            {
-                "action": "publishToStream",
-                "stream_key": "some-stream-key2",
-                "fps": 120,
-                # "max_events": 340,
-                "max_time": 4,
-                "event_template": {
-                    "buffer_stream_key": "publisher-1-bufferstream-key",
-                    "publisher_id": "publisher-id-1",
-                    "source": "rtmp://172.17.0.1/live/mystream",
-                    "image_url": "c8d025d3-8c3a-460c-a6f5-cabb7b179807",
-                    "vekg": {},
-                    "width": 640,
-                    "height": 480,
-                    "color_channels": "BGR",
-                    "query_ids": [],
-                }
-
-            }
-        ]
+        "actions": actions
     }
     run(**kwargs)
     import time
-    time.sleep(70)
+    time.sleep(30)
