@@ -1,208 +1,155 @@
 {
-    "benchmark":{
+    "benchmark": {
         "tasks": [
-                {
-                    "module": "benchmark_tools.task_generator.task_add_publisher",
-                    "args": [],
-                    "kwargs": {
-                        "redis_address": "172.17.0.1",
-                        "redis_port": "6379",
-                        "input_cmd_stream_key": "cm-cmd",
-                        "logging_level": "DEBUG",
-                        "actions": [
-                            {
-                               "publisher_id":"publisher1",
-                               "action":"pubJoin",
-                               "source":"rtmp://172.17.0.1/vod2/coco2017-val-300x300-30fps.flv",
-                               "stream_key":"pub-cmd-publisher1",
-                               "meta":{
-                                  "geolocation":"",
-                                  "cctv":"True",
-                                  "color":"True",
-                                  "fps":"30",
-                                  "resolution":"300x300",
-                                  "color_channels":""
-                               }
-                            }
-                        ]
-                    }
-                },
-                {
-                    "module": "benchmark_tools.task_generator.task_add_subscriber",
-                    "args": [],
-                    "kwargs": {
-                        "redis_address": "172.17.0.1",
-                        "redis_port": "6379",
-                        "output_path": "./outputs",
-                        "logging_level": "INFO",
-                        "actions": [
-                            {
-                                "action": "exportSubscribeToQuery",
-                                "subscriber_id": "3",
-                                "query_num": "1"
-                            }
-                        ]
-                    }
-                },
-                {
-                    "module": "benchmark_tools.task_generator.task_add_queries",
-                    "args": [],
-                    "kwargs": {
-                        "redis_address": "172.17.0.1",
-                        "redis_port": "6379",
-                        "input_cmd_stream_key": "cm-cmd",
-                        "logging_level": "DEBUG",
-                        "actions": [
-                            {
-                                "action": "addQuery",
-                                "query": "select object_detection from publisher1 where (object1.label = person) within TUMBLING_COUNT_WINDOW(1) withconfidence >30",
-                                "subscriber_id": "3",
-                                "query_id": "1"
-                            }
-                        ]
-                    }
-                },
-                {
-                    "module": "benchmark_tools.task_generator.task_wait_event_trace_timeout",
-                    "args": [],
-                    "kwargs": {
-                        "jaeger_api_host": "http://172.17.0.1:16686",
-                        "logging_level": "DEBUG",
-                        "actions": [
-                            {
-                                "action": "wait_timeout_event_trace",
-                                "service": "PreProcessing",
-                                "operation": "publish_next_event",
-                                "wait_retry_time": 10,
-                                "event_timeout": 15,
-                                "forced_stop_timeout_limit": 180
-                            }
-                        ]
-                    }
-                },
-                {
-                    "module": "benchmark_tools.task_generator.task_add_queries",
-                    "args": [],
-                    "kwargs": {
-                        "redis_address": "172.17.0.1",
-                        "redis_port": "6379",
-                        "input_cmd_stream_key": "cm-cmd",
-                        "logging_level": "DEBUG",
-                        "actions": [
-                            {
-                                "action": "delQuery",
-                                "subscriber_id": "3",
-                                "query_id": "1"
-                            },
-                            {
-                                "action": "task_gen_wait_for",
-                                "sleep_time": "3"
-                            }
-                        ]
-                    }
-                },
-                {
-                    "module": "benchmark_tools.task_generator.task_export_jaeger_json",
-                    "args": [],
-                    "kwargs" : {
-                        "jaeger_api_host": "http://172.17.0.1:16686",
-                        "logging_level": "DEBUG",
-                        "actions": [
-                            {
-                                "action": "exportTraces",
-                                "service": "PreProcessing",
-                                "operation": "publish_next_event",
-                                "output_path": "./outputs"
-                            },
-                            {
-                                "action": "exportTraces",
-                                "service": "ObjectDetectionService",
-                                "operation": "process_data_event",
-                                "output_path": "./outputs"
-                            }
-                        ]
-                    }
-                }
-        ],
-        "evaluations": [
             {
-                "module": "benchmark_tools.evaluation.energy_consumption_evaluation",
+                "module": "benchmark_tools.task_generator.task_add_mocked_stream_publishing",
                 "args": [],
                 "kwargs": {
-                    "energy_grid_api_host": "http://10.196.2.31:5000",
-                    "jaeger_api_host": "http://172.17.0.1:16686",
-                    "start_time": "jaeger",
-                    "end_time": "jaeger",
-                    "energy_device_id": "4424",
-                    "threshold_functions": {
-                        ".*": "lambda x: x < 300",
-                        "real_energy_avg": "lambda x: x < 300"
-                    },
-                    "logging_level": "DEBUG"
+                    "redis_address": "172.17.0.1",
+                    "redis_port": "6379",
+                    "logging_level": "ERROR",
+                    "max_stream_length": null,
+                    "actions": [
+                        {
+                            "action": "publishToStream",
+                            "stream_key": "PublisherCreated",
+                            "fps": 1,
+                            "max_events": 1,
+                            "max_time": null,
+                            "event_template": {
+                                "publisher_id": "Publisher1",
+                                "source": "rtmp://172.17.0.1/vod2/coco2017-val-300x300-60fps.flv",
+                                "stream_key": "pub-cmd-Publisher1",
+                                "meta": {
+                                    "color": "True",
+                                    "fps": "60",
+                                    "resolution": "300x300"
+                                }
+                            }
+                        }
+                    ]
                 }
             },
             {
+                "module": "benchmark_tools.task_generator.task_add_subscriber",
+                "args": [],
+                "kwargs": {
+                    "redis_address": "172.17.0.1",
+                    "redis_port": "6379",
+                    "output_path": "./outputs",
+                    "logging_level": "ERROR",
+                    "actions": [
+                        {
+                            "action": "exportSubscribeToQuery",
+                            "subscriber_id": "Subscriber1",
+                            "stream_key": "91b0e93c4b24aaa6fb37ce0e5e216c94"
+                        }
+                    ]
+                }
+            },
+            {
+                "module": "benchmark_tools.task_generator.task_add_mocked_stream_publishing",
+                "args": [],
+                "kwargs": {
+                    "redis_address": "172.17.0.1",
+                    "redis_port": "6379",
+                    "logging_level": "ERROR",
+                    "max_stream_length": null,
+                    "actions": [
+                        {
+                            "action": "publishToStream",
+                            "stream_key": "QueryReceived",
+                            "fps": 1,
+                            "max_events": 1,
+                            "max_time": null,
+                            "event_template": {
+                                "subscriber_id": "Subscriber1",
+                                "query": "REGISTER QUERY AnyPersonFromPub1LatencyMin OUTPUT K_GRAPH_JSON CONTENT ObjectDetection MATCH (p:person) FROM Publisher1 WITHIN TUMBLING_COUNT_WINDOW(1) WITH_QOS latency = 'min' RETURN *"
+                            }
+                        }
+                    ]
+                }
+            },
+            {
+                "module": "benchmark_tools.task_generator.task_add_mocked_stream_publishing",
+                "args": [],
+                "kwargs": {
+                    "redis_address": "172.17.0.1",
+                    "redis_port": "6379",
+                    "logging_level": "ERROR",
+                    "max_stream_length": null,
+                    "actions": [
+                        {
+                            "action": "task_gen_wait_for",
+                            "sleep_time": 90.0
+                        },
+                        {
+                            "action": "publishToStream",
+                            "stream_key": "QueryDeletionRequested",
+                            "fps": 1,
+                            "max_events": 1,
+                            "max_time": null,
+                            "event_template": {
+                                "subscriber_id": "Subscriber1",
+                                "query_name": "AnyPersonFromPub1LatencyMin"
+                            }
+                        },
+                        {
+                            "action": "task_gen_wait_for",
+                            "sleep_time": 10
+                        }
+                    ]
+                }
+            }
+        ],
+        "evaluations": [
+            {
                 "module": "benchmark_tools.evaluation.latency_evaluation",
                 "args": [],
-                "kwargs":{
+                "kwargs": {
                     "jaeger_api_host": "http://172.17.0.1:16686",
-                    "threshold_functions": {
-                        "latency_avg": "lambda x: x < (3 * 1.1)",
-                        "latency_std": "lambda x: x < (3 * 1.1)"
-                    },
-                    "logging_level": "DEBUG"
+                    "threshold_functions": {},
+                    "logging_level": "ERROR"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.scheduler_load_shedding_evaluation",
+                "args": [],
+                "kwargs": {
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "threshold_functions": {},
+                    "logging_level": "ERROR"
+                }
+            },
+            {
+                "module": "benchmark_tools.evaluation.throughput_evaluation",
+                "args": [],
+                "kwargs": {
+                    "jaeger_api_host": "http://172.17.0.1:16686",
+                    "threshold_functions": {},
+                    "logging_level": "ERROR"
                 }
             },
             {
                 "module": "benchmark_tools.evaluation.sub_accuracy_evaluation",
                 "args": [],
                 "kwargs": {
-                    "subscription_jl": "./outputs/subscription_3-1.jl",
+                    "subscription_jl": "./outputs/subscription_91b0e93c4b24aaa6fb37ce0e5e216c94.jl",
                     "dataset_annotations_json": "./datasets/coco2017/annotations/instances_val2017.json",
-                    "dataset_frameindex_json": "./datasets/coco2017/frame_indexes/coco2017-val-300x300-30fps.json",
+                    "dataset_frameindex_json": "./datasets/coco2017/frame_indexes/coco2017-val-300x300-60fps.json",
                     "class_label": "person",
-                    "threshold_functions": {
-                        "accuracy": "lambda x: x > 0.5",
-                        "precision": "lambda x: x > 0.5",
-                        "recall": "lambda x: x > 0.9",
-                        "f_score": "lambda x: x > 0.6"
-                    },
-                    "logging_level": "DEBUG"
-                }
-            },
-            {
-                "module": "benchmark_tools.evaluation.throughput_evaluation",
-                "args": [],
-                "kwargs":{
-                    "jaeger_api_host": "http://172.17.0.1:16686",
-                    "threshold_functions": {
-                        "throughput_fps": "lambda x: x > 10"
-                    },
-                    "logging_level": "DEBUG"
+                    "threshold_functions": {},
+                    "logging_level": "ERROR"
                 }
             },
             {
                 "module": "benchmark_tools.evaluation.per_service_speed_evaluation",
                 "args": [],
-                "kwargs":{
+                "kwargs": {
                     "jaeger_api_host": "http://172.17.0.1:16686",
                     "services": "all",
-                    "threshold_functions": {
-                        ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
-                        ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",
-                        ".*_tracer_injection_avg": "lambda x: x < 0.0001",
-                        ".*_tracer_injection_std": "lambda x: x < 0.0001",
-                        ".*_process_data_event_avg": "lambda x: x < 0.05",
-                        ".*_process_data_event_std": "lambda x: x < 0.05",
-                        ".*_publish_next_event_avg": "lambda x: x < 0.01",
-                        ".*_publish_next_event_std": "lambda x: x < 0.01",
-                        ".*_process_action_avg": "lambda x: x < 0.1",
-                        ".*_process_action_std": "lambda x: x < 0.1",
-                        ".*": "lambda x: x < (0.01)",
-                        "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
-                        "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)"
-                    },
-                    "logging_level": "DEBUG"
+                    "threshold_functions": {},
+                    "logging_level": "ERROR"
                 }
             }
         ]

@@ -1,7 +1,7 @@
 version: '2.3'
 services:
   benchmark-tools:
-    image: registry.insight-centre.org/sit/mps/benchmark-tools:felipe-phd
+    image: registry.insight-centre.org/sit/mps/benchmark-tools:master
     command: python /service/benchmark_tools/controller/controller.py
     build:
       context: '.'
