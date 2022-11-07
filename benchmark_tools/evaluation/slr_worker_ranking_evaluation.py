@@ -44,37 +44,40 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         if best_only:
             comp_ranking_index = comp_ranking_index[:1]
             baseline_ranking = baseline_ranking[:1]
-        if len(comp_ranking_index) != baseline_ranking:
+        if len(comp_ranking_index) != len(baseline_ranking):
             return True
 
-        contradictions = [comp_ranking_index[i] == baseline_ranking[i] for i in range(len(baseline_ranking))]
-        return all(contradictions)
+        equivalents = [comp_ranking_index[i] == baseline_ranking[i] for i in range(len(baseline_ranking))]
+        return not all(equivalents)
 
     def compare_event(self, event_data):
         slr_profile = list(event_data['slr_profiles'].values())[0]
         ranking_index = slr_profile['ranking_index']
         comparison_data = {
-            'ranking_index': ranking_index,
+            'comp_ranking_index': ranking_index,
             'has_contradiction_on_best': self.has_contradiction_on_ranking(ranking_index, best_only=True),
             'has_contradiction_on_any': self.has_contradiction_on_ranking(ranking_index, best_only=False),
         }
         return comparison_data
 
     def event_handler(self, json_msg):
-        event_key = b'event' if b'event' in json_msg else 'event'
-        default_content = b'{}' if b'event' in json_msg else '{}'
-        event_json = json_msg.get(event_key, default_content).decode('utf-8')
+        is_binary = b'event' in json_msg
+        event_key = b'event' if is_binary else 'event'
+        default_content = b'{}' if is_binary else '{}'
+        event_json = json_msg.get(event_key, default_content)
+        if is_binary:
+            event_json = event_json.decode('utf-8')
+
         event_data = json.loads(event_json)
         self.events_compared.append(self.compare_event(event_data))
 
     def calculate_metrics(self):
-        self.read_and_process_all_stream_by_key(self.stream_key)
         results = self.events_compared[0]
         return results
 
     def run(self):
-        self.logger.debug(f'Evaluation for Subscription accuracy for {self.class_label} class is running for {len(self.image_id_to_events)}')
-        self.prepare_false_and_true_positives_and_negatives()
+        self.logger.debug(f'Evaluation for SLR Worker Ranking index against the ranking: {self.expected_ranking_index}')
+        self.read_and_process_all_stream_by_key(self.stream_key)
         results = self.calculate_metrics()
         return self.verify_thresholds(results)
 
