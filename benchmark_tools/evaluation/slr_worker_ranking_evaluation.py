@@ -1,0 +1,106 @@
+import json
+
+from event_service_utils.streams.redis import RedisStreamFactory
+
+from benchmark_tools.evaluation.base import BaseEvaluation
+
+
+class SLRWorkerRankingEvaluation(BaseEvaluation):
+
+    def __init__(self, *args, **kwargs):
+        super(SLRWorkerRankingEvaluation, self).__init__(*args, **kwargs)
+        self.stream_factory = kwargs['stream_factory']
+        self.stream_key = kwargs['stream_key']
+
+        # self.event_count = kwargs['event_count']
+        # self.expected_event = kwargs['expected_event']
+        self.expected_ranking_index = kwargs['expected_ranking_index']
+
+        # self.event_field_comparison = kwargs['event_field_comparison']
+        # [{
+        #     'path_ret': "list(event_data['slr_profiles'].values())[0]"
+        # }]
+        # self.comparison_eval_by_field_paths = kwargs['event_field_comparison_paths']
+        self.events_compared = []
+
+
+    def read_and_process_all_stream_by_key(self, stream_key):
+        stream = self.stream_factory.create(
+            stream_key, stype='streamOnly'
+        )
+        event_list = stream.single_io_stream.read(block=1)
+        for event_tuple in event_list:
+            event_id, json_msg = event_tuple
+            try:
+                self.event_handler(json_msg)
+            except Exception as e:
+                self.logger.error(f'Error processing {json_msg}:')
+                self.logger.exception(e)
+
+
+    def has_contradiction_on_ranking(self, ranking_index, best_only=False):
+        comp_ranking_index = ranking_index
+        baseline_ranking = self.expected_ranking_index
+        if best_only:
+            comp_ranking_index = comp_ranking_index[:1]
+            baseline_ranking = baseline_ranking[:1]
+        if len(comp_ranking_index) != baseline_ranking:
+            return True
+
+        contradictions = [comp_ranking_index[i] == baseline_ranking[i] for i in range(len(baseline_ranking))]
+        return all(contradictions)
+
+    def compare_event(self, event_data):
+        slr_profile = list(event_data['slr_profiles'].values())[0]
+        ranking_index = slr_profile['ranking_index']
+        comparison_data = {
+            'ranking_index': ranking_index,
+            'has_contradiction_on_best': self.has_contradiction_on_ranking(ranking_index, best_only=True),
+            'has_contradiction_on_any': self.has_contradiction_on_ranking(ranking_index, best_only=False),
+        }
+        return comparison_data
+
+    def event_handler(self, json_msg):
+        event_key = b'event' if b'event' in json_msg else 'event'
+        default_content = b'{}' if b'event' in json_msg else '{}'
+        event_json = json_msg.get(event_key, default_content).decode('utf-8')
+        event_data = json.loads(event_json)
+        self.events_compared.append(self.compare_event(event_data))
+
+    def calculate_metrics(self):
+        self.read_and_process_all_stream_by_key(self.stream_key)
+        results = self.events_compared[0]
+        return results
+
+    def run(self):
+        self.logger.debug(f'Evaluation for Subscription accuracy for {self.class_label} class is running for {len(self.image_id_to_events)}')
+        self.prepare_false_and_true_positives_and_negatives()
+        results = self.calculate_metrics()
+        return self.verify_thresholds(results)
+
+
+def run(redis_address, redis_port, stream_key, expected_ranking_index, threshold_functions, logging_level):
+    stream_factory = RedisStreamFactory(host=redis_address, port=redis_port, block=1)
+    evaluation = SLRWorkerRankingEvaluation(
+        stream_factory=stream_factory,
+        stream_key=stream_key,
+        expected_ranking_index=expected_ranking_index,
+        threshold_functions=threshold_functions,
+        logging_level=logging_level
+    )
+    return evaluation.run()
+
+
+if __name__ == '__main__':
+    kwargs = {
+        "redis_address": "localhost",
+        "redis_port": "6379",
+        "stream_key": "ServiceSLRProfilesRanked",
+        "expected_ranking_index": [0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+        "threshold_functions": {
+            "has_contradiction_on_best": "lambda b: b == False",
+            "has_contradiction_on_any": "lambda b: b == False",
+        },
+        "logging_level": "DEBUG"
+    }
+    print(run(**kwargs))
