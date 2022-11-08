@@ -35,10 +35,32 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
     def test_calculate_metrics_should_return_correctly(self):
 
         mocked_comparison = {'some': 'comparison'}
-        self.evaluation.events_compared = [mocked_comparison]
+        self.evaluation.events_compared = [
+            {
+                'comp_ranking_index': [0, 5, 1, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'has_contradiction_on_best': False,
+                'has_contradiction_on_any': True,
+            },
+            {
+                'comp_ranking_index': [1, 5, 0, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'has_contradiction_on_best': True,
+                'has_contradiction_on_any': True,
+            },
+            {
+                'comp_ranking_index': [0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'has_contradiction_on_best': False,
+                'has_contradiction_on_any': False,
+            }
+        ]
         ret = self.evaluation.calculate_metrics()
 
-        self.assertDictEqual(ret, mocked_comparison)
+        expedted_res = {
+            'c_rate_any': 0.666, 'c_rate_best': 0.333, 'total_events': 3
+        }
+
+        self.assertAlmostEqual(ret['c_rate_any'], expedted_res['c_rate_any'], places=2)
+        self.assertAlmostEqual(ret['c_rate_best'], expedted_res['c_rate_best'], places=2)
+        self.assertEqual(ret['total_events'], expedted_res['total_events'])
 
     @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.compare_event')
     def test_event_handle_should_call_comparison_and_save_it(self, mocked_comp):
@@ -96,91 +118,6 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         self.assertEqual(ret['has_contradiction_on_best'], False)
         self.assertEqual(ret['has_contradiction_on_any'], True)
 
-
-    # def test_get_initial_time(self):
-    #     start_time1_a = 10**6
-    #     start_time1_b = start_time1_a + 1000
-
-    #     start_time2_a = start_time1_b + 2000
-    #     start_time2_b = start_time2_a + 1000
-
-    #     traces = [
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time1_a, 'duration': 1000},  # start time x
-    #                 {'some_other_span'},
-    #                 {'some_other_span'},
-    #                 {'some_other_span'},
-    #                 {'startTime': start_time1_b, 'duration': 2000},  # start time x+10.002 seconds
-    #             ]
-    #         },
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time2_a, 'duration': 1000},  # start time x
-    #                 {'some_other_span'},
-    #                 {'some_other_span'},
-    #                 {'some_other_span'},
-    #                 {'startTime': start_time2_b, 'duration': 2000},  # start time x+10.002 seconds
-    #             ]
-    #         }
-    #     ]
-    #     ret = self.evaluation.get_initial_time(traces)
-    #     self.assertEqual(ret, start_time1_a)
-
-    # def test_get_end_time(self):
-    #     start_time1_a = 10**6
-    #     start_time1_b = start_time1_a + 1000
-
-    #     start_time2_a = start_time1_b + 2000
-    #     start_time2_b = start_time2_a + 1000
-    #     end_time = start_time2_b + 2000
-
-    #     traces = [
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time1_a, 'duration': 1000},  # start time x
-    #                 {'startTime': start_time1_b, 'duration': 2000},  # start time x+10.002 seconds
-    #             ]
-    #         },
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time2_a, 'duration': 1000},  # start time x
-    #                 {'startTime': start_time2_b, 'duration': 2000},  # start time x+10.002 seconds
-    #             ]
-    #         }
-    #     ]
-    #     ret = self.evaluation.get_end_time(traces)
-    #     self.assertEqual(ret, end_time)
-
-    # def test_get_end_time_when_last_trace_is_not_last_processed(self):
-    #     start_time1_a = 10**6
-
-    #     start_time2_a = start_time1_a + 50
-
-    #     start_time1_b = start_time1_a + 1000
-
-    #     start_time2_b = start_time2_a + 1000
-
-    #     end_time = start_time1_b + 3000
-
-    #     # start_time2 will finish 950 before start_time1
-
-    #     traces = [
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time1_a, 'duration': 1000},  # start time x
-    #                 {'startTime': start_time1_b, 'duration': 3000},  # start time x+10.002 seconds
-    #             ]
-    #         },
-    #         {
-    #             'spans': [
-    #                 {'startTime': start_time2_a, 'duration': 1000},  # start time x
-    #                 {'startTime': start_time2_b, 'duration': 2000},  # start time x+10.002 seconds
-    #             ]
-    #         }
-    #     ]
-    #     ret = self.evaluation.get_end_time(traces)
-    #     self.assertEqual(ret, end_time)
 
     def tearDown(self):
         pass

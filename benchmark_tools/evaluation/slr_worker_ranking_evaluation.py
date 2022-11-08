@@ -72,7 +72,24 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         self.events_compared.append(self.compare_event(event_data))
 
     def calculate_metrics(self):
-        results = self.events_compared[0]
+        c_rate_best = 0
+        c_rate_any = 0
+        total = len(self.events_compared)
+        for comp_result in self.events_compared:
+            if comp_result['has_contradiction_on_best']:
+                c_rate_best += 1
+
+            if comp_result['has_contradiction_on_any']:
+                c_rate_any += 1
+
+        if total != 0:
+            c_rate_best = c_rate_best / total
+            c_rate_any = c_rate_any / total
+        results = {
+            'total_events': total,
+            'c_rate_best': c_rate_best,
+            'c_rate_any': c_rate_any,
+        }
         return results
 
     def run(self):
