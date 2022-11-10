@@ -38,29 +38,37 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         self.evaluation.events_compared = [
             {
                 'comp_ranking_index': [0, 5, 1, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'comp_ranking_scores': [1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1],
                 'has_contradiction_on_best': False,
                 'has_contradiction_on_any': True,
             },
             {
                 'comp_ranking_index': [1, 5, 0, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'comp_ranking_scores': [3, 3, 3,  3, 3, 3, 3, 3, 3,  3, 3, 3],
                 'has_contradiction_on_best': True,
                 'has_contradiction_on_any': True,
             },
             {
                 'comp_ranking_index': [0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+                'comp_ranking_scores': [2, 2, 2,  2, 2, 2, 2, 2, 2,  2, 2, 2],
                 'has_contradiction_on_best': False,
                 'has_contradiction_on_any': False,
             }
         ]
+
         ret = self.evaluation.calculate_metrics()
 
         expedted_res = {
-            'c_rate_any': 0.666, 'c_rate_best': 0.333, 'total_events': 3
+            'c_rate_any': 0.666,
+            'c_rate_best': 0.333,
+            'total_events': 3,
+            'avg_rankings_scores':  [2.0, 2.0, 2.0,  2.0, 2.0, 2.0, 2.0, 2.0, 2.0,  2.0, 2.0, 2.0],
         }
 
         self.assertAlmostEqual(ret['c_rate_any'], expedted_res['c_rate_any'], places=2)
         self.assertAlmostEqual(ret['c_rate_best'], expedted_res['c_rate_best'], places=2)
         self.assertEqual(ret['total_events'], expedted_res['total_events'])
+        self.assertListEqual(ret['avg_rankings_scores'], expedted_res['avg_rankings_scores'])
 
     @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.compare_event')
     def test_event_handle_should_call_comparison_and_save_it(self, mocked_comp):

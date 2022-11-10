@@ -37,7 +37,6 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
                 self.logger.error(f'Error processing {json_msg}:')
                 self.logger.exception(e)
 
-
     def has_contradiction_on_ranking(self, ranking_index, best_only=False):
         comp_ranking_index = ranking_index
         baseline_ranking = self.expected_ranking_index
@@ -53,8 +52,11 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
     def compare_event(self, event_data):
         slr_profile = list(event_data['slr_profiles'].values())[0]
         ranking_index = slr_profile['ranking_index']
+        ranking_scores = slr_profile['ranking_index']
+
         comparison_data = {
             'comp_ranking_index': ranking_index,
+            'comp_ranking_scores': ranking_scores,
             'has_contradiction_on_best': self.has_contradiction_on_ranking(ranking_index, best_only=True),
             'has_contradiction_on_any': self.has_contradiction_on_ranking(ranking_index, best_only=False),
         }
@@ -71,24 +73,39 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         event_data = json.loads(event_json)
         self.events_compared.append(self.compare_event(event_data))
 
+
+
+
     def calculate_metrics(self):
         c_rate_best = 0
         c_rate_any = 0
         total = len(self.events_compared)
+        avg_rankings_scores = []
         for comp_result in self.events_compared:
             if comp_result['has_contradiction_on_best']:
                 c_rate_best += 1
 
             if comp_result['has_contradiction_on_any']:
                 c_rate_any += 1
+            if len(avg_rankings_scores) == 0:
+                avg_rankings_scores = comp_result['comp_ranking_scores']
+            else:
+                for alt_index, ranking_score in enumerate(comp_result['comp_ranking_scores']):
+                    avg_rankings_scores[alt_index] += ranking_score
+
 
         if total != 0:
             c_rate_best = c_rate_best / total
             c_rate_any = c_rate_any / total
+
+            for alt_index in range(len(avg_rankings_scores)):
+                avg_rankings_scores[alt_index] = avg_rankings_scores[alt_index] / total
+
         results = {
             'total_events': total,
             'c_rate_best': c_rate_best,
             'c_rate_any': c_rate_any,
+            'avg_rankings_scores': avg_rankings_scores,
         }
         return results
 
