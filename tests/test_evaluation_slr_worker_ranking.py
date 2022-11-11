@@ -21,6 +21,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
             # redis_port="6379",
             stream_key="ServiceSLRProfilesRanked",
             expected_ranking_index=[0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+            output_path='./outputs'
         )
 
     @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.read_and_process_all_stream_by_key')
@@ -70,12 +71,13 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         self.assertEqual(ret['total_events'], expedted_res['total_events'])
         self.assertListEqual(ret['avg_rankings_scores'], expedted_res['avg_rankings_scores'])
 
+    @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.export_event_to_jl_file')
     @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.compare_event')
-    def test_event_handle_should_call_comparison_and_save_it(self, mocked_comp):
+    def test_event_handle_should_call_comparison_and_save_it(self, mocked_comp, mocked_export):
         redis_msg = {b'event': b'{"some": "json"}'}
         expected_comp = {'some': 'comp'}
         mocked_comp.return_value = expected_comp
-        self.evaluation.event_handler(redis_msg)
+        self.evaluation.event_handler(redis_msg, output_file='anyfile')
         self.assertEqual(len(self.evaluation.events_compared), 1)
         self.assertDictEqual(self.evaluation.events_compared[0], expected_comp)
 

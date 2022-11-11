@@ -1,4 +1,5 @@
 import json
+import os
 
 from event_service_utils.streams.redis import RedisStreamFactory
 
@@ -11,6 +12,8 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         super(SLRWorkerRankingEvaluation, self).__init__(*args, **kwargs)
         self.stream_factory = kwargs['stream_factory']
         self.stream_key = kwargs['stream_key']
+        self.output_path = kwargs['output_path']
+        self.output_file = os.path.join(self.output_path, f'stream_{self.stream_key}.jl')
 
         # self.event_count = kwargs['event_count']
         # self.expected_event = kwargs['expected_event']
@@ -23,16 +26,19 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         # self.comparison_eval_by_field_paths = kwargs['event_field_comparison_paths']
         self.events_compared = []
 
-
-    def read_and_process_all_stream_by_key(self, stream_key):
+    def read_and_process_all_stream_by_key(self, stream_key, output_file):
         stream = self.stream_factory.create(
             stream_key, stype='streamOnly'
         )
+
+        if os.path.exists(output_file):
+            os.remove(output_file)
+
         event_list = stream.single_io_stream.read(block=1)
         for event_tuple in event_list:
             event_id, json_msg = event_tuple
             try:
-                self.event_handler(json_msg)
+                self.event_handler(json_msg, output_file)
             except Exception as e:
                 self.logger.error(f'Error processing {json_msg}:')
                 self.logger.exception(e)
@@ -62,7 +68,11 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         }
         return comparison_data
 
-    def event_handler(self, json_msg):
+    def export_event_to_jl_file(self, event_json, output_file):
+        with open(output_file, 'a') as f:
+            f.write(event_json + '\n')
+
+    def event_handler(self, json_msg, output_file):
         is_binary = b'event' in json_msg
         event_key = b'event' if is_binary else 'event'
         default_content = b'{}' if is_binary else '{}'
@@ -72,9 +82,7 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
 
         event_data = json.loads(event_json)
         self.events_compared.append(self.compare_event(event_data))
-
-
-
+        self.export_event_to_jl_file(event_json, output_file)
 
     def calculate_metrics(self):
         c_rate_best = 0
@@ -111,7 +119,7 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
 
     def run(self):
         self.logger.debug(f'Evaluation for SLR Worker Ranking index against the ranking: {self.expected_ranking_index}')
-        self.read_and_process_all_stream_by_key(self.stream_key)
+        self.read_and_process_all_stream_by_key(self.stream_key, self.output_file)
         results = self.calculate_metrics()
         return self.verify_thresholds(results)
 
