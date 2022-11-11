@@ -21,6 +21,8 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
             # redis_port="6379",
             stream_key="ServiceSLRProfilesRanked",
             expected_ranking_index=[0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
+            expected_ranking_scores=[11, 10, 5, 4, 3, 9, 7, 6, 1, 0, 8], #fix this with some scores, at least these are ok with the rank
+            similarity_rounding_places=3,
             output_path='./outputs'
         )
 
@@ -97,6 +99,55 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         compared_ranking = [1, 0, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9]
         self.assertTrue(self.evaluation.has_contradiction_on_ranking(ranking_index=compared_ranking, best_only=True))
 
+    def test_false_has_contradiction_on_ranking_with_similarity_on_any(self):
+        similar_index_pairs = set([(0, 1), (0, 2), (1, 2)]) # 0, 1, 2 indexes are similar and interchangable
+        similar_index_possibilities = [
+            [0, 1, 2, 3, 4], [1, 0, 2, 3, 4], [2, 0, 1, 3, 4], [2, 1, 0, 3, 4], [0, 2, 1, 3, 4], [1, 2, 0, 3, 4]
+        ]
+        self.evaluation.expected_ranking_index = [0, 1, 2, 3, 4]
+        # testing for no contradiction (should return false)
+        for similar_index in similar_index_possibilities:
+            self.assertFalse(
+                self.evaluation.has_contradiction_on_ranking(ranking_index=similar_index, best_only=False, similar_index_pairs=similar_index_pairs)
+            )
+
+    def test_true_has_contradiction_on_ranking_with_similarity_on_any(self):
+        similar_index_pairs = set([(0, 1), (0, 2), (1, 2)]) # 0, 1, 2 indexes are similar and interchangable
+        similar_index_possibilities = [
+            [0, 1, 2, 4, 3], [1, 0, 2, 4, 3], [2, 0, 1, 4, 3], [2, 1, 0, 4, 3], [0, 2, 1, 4, 3], [3, 2, 4, 3, 0]
+        ]
+        self.evaluation.expected_ranking_index = [0, 1, 2, 3, 4]
+        # testing for no contradiction (should return false)
+        for similar_index in similar_index_possibilities:
+            self.assertTrue(
+                self.evaluation.has_contradiction_on_ranking(ranking_index=similar_index, best_only=False, similar_index_pairs=similar_index_pairs)
+            )
+
+
+    def test_false_has_contradiction_on_ranking_with_similarity_on_best(self):
+        similar_index_pairs = set([(0, 1), (0, 2), (1, 2)]) # 0, 1, 2 indexes are similar and interchangable
+        similar_index_possibilities = [
+            [0, 1, 2, 3, 4], [1, 0, 2, 4, 3], [2, 0, 1, 3, 4], [2, 4, 0, 1, 3], [0, 2, 1, 3, 4], [1, 2, 0, 3, 4]
+        ]
+        self.evaluation.expected_ranking_index = [0, 1, 2, 3, 4]
+        # testing for no contradiction (should return false)
+        for similar_index in similar_index_possibilities:
+            self.assertFalse(
+                self.evaluation.has_contradiction_on_ranking(ranking_index=similar_index, best_only=True, similar_index_pairs=similar_index_pairs)
+            )
+
+    def test_true_has_contradiction_on_ranking_with_similarity_on_best(self):
+        similar_index_pairs = set([(0, 1), (0, 2), (1, 2)]) # 0, 1, 2 indexes are similar and interchangable
+        similar_index_possibilities = [
+            [3, 1, 2, 4, 0], [4, 0, 2, 1, 3], [3, 0, 1, 4, 2], [4, 1, 0, 2, 3], [3, 2, 1, 4, 0], [4, 2, 1, 3, 0]
+        ]
+        self.evaluation.expected_ranking_index = [0, 1, 2, 3, 4]
+        # testing for no contradiction (should return false)
+        for similar_index in similar_index_possibilities:
+            self.assertTrue(
+                self.evaluation.has_contradiction_on_ranking(ranking_index=similar_index, best_only=True, similar_index_pairs=similar_index_pairs)
+            )
+
     def test_compare_event_returns_correctly(self):
         event_data = {
             "service_type": "ObjectDetection",
@@ -125,9 +176,46 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         }
         ret = self.evaluation.compare_event(event_data)
         self.assertEqual(ret['comp_ranking_index'], [0, 1, 6, 7, 8, 5, 11, 10, 2, 3, 4, 9])
-        self.assertEqual(ret['has_contradiction_on_best'], False)
-        self.assertEqual(ret['has_contradiction_on_any'], True)
+        self.assertEqual(ret['exact']['has_contradiction_on_best'], False)
+        self.assertEqual(ret['exact']['has_contradiction_on_any'], True)
 
+    def test_compare_event_returns_correctly_similarity_as_well(self):
+        event_data = {
+            "service_type": "ObjectDetection",
+            "slr_profiles":{
+                "ObjectDetection-0.7-0.7-0.3": {
+                    "query_ids": ["f817a712e1906879abade4f3ac893d0e"],
+                    "criteria_weights": [0.7, 0.7, 0.3],
+                    "alternatives_ids": [
+                        "worker-000-data",
+                        "worker-001-data",
+                        "worker-002-data",
+                        "worker-003-data",
+                        "worker-004-data",
+                        "worker-005-data",
+                        "worker-006-data",
+                        "worker-007-data",
+                        "worker-008-data",
+                        "worker-009-data",
+                        "worker-010-data",
+                        "worker-011-data"
+                    ],
+                    "ranking_index": [0, 1, 2, 3],
+                    "ranking_scores": [0.850, 0.850, 0.850, 0.850]
+                }
+            }
+        }
+        self.evaluation.expected_ranking_index = [1, 0, 3, 2]
+        self.evaluation.expected_ranking_scores = [0.5, 0.5, 0.2, 0.1]
+        self.evaluation.expected_similar_indexes_pairs = set([(0, 1)])
+
+        ret = self.evaluation.compare_event(event_data)
+        self.assertEqual(ret['comp_ranking_index'], [0, 1, 2, 3])
+        self.assertEqual(ret['comp_ranking_scores'], [0.850, 0.850, 0.850, 0.850])
+        self.assertEqual(ret['exact']['has_contradiction_on_best'], True)
+        self.assertEqual(ret['exact']['has_contradiction_on_any'], True)
+        self.assertEqual(ret['similar']['has_contradiction_on_best'], False)
+        self.assertEqual(ret['similar']['has_contradiction_on_any'], True)
 
     def tearDown(self):
         pass

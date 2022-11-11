@@ -18,6 +18,10 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         # self.event_count = kwargs['event_count']
         # self.expected_event = kwargs['expected_event']
         self.expected_ranking_index = kwargs['expected_ranking_index']
+        self.expected_ranking_scores = kwargs['expected_ranking_scores']
+        self.similarity_rounding_places = kwargs['similarity_rounding_places']
+        self.expected_similar_indexes_pairs = self.create_similar_indexes_pairs_from_scores(
+            self.expected_ranking_scores, decimal_places=self.similarity_rounding_places)
 
         # self.event_field_comparison = kwargs['event_field_comparison']
         # [{
@@ -43,7 +47,7 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
                 self.logger.error(f'Error processing {json_msg}:')
                 self.logger.exception(e)
 
-    def has_contradiction_on_ranking(self, ranking_index, best_only=False):
+    def has_contradiction_on_ranking(self, ranking_index, best_only=False, similar_index_pairs=None):
         comp_ranking_index = ranking_index
         baseline_ranking = self.expected_ranking_index
         if best_only:
@@ -52,20 +56,85 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         if len(comp_ranking_index) != len(baseline_ranking):
             return True
 
-        equivalents = [comp_ranking_index[i] == baseline_ranking[i] for i in range(len(baseline_ranking))]
+        equivalents = []
+        for i in range(len(baseline_ranking)):
+            is_equivalent = comp_ranking_index[i] == baseline_ranking[i]
+
+            # (0, 1), (0, 2), (1, 2)
+            # comp_ranking_index = [1, 0, 2, 3, 4]
+            # baseline_ranking = [0, 1, 2, 3, 4]
+            # alt: [0, 1, 2, 3, 4], [1, 0, 2, 3, 4], [2, 0, 1, 3, 4], [2, 1, 0, 3, 4], [0, 2, 1, 3, 4], [1, 2, 0, 3, 4]
+            if similar_index_pairs is not None and not is_equivalent:
+                a_b_similar_pair = (comp_ranking_index[i], baseline_ranking[i])
+                b_a_similar_pair = (baseline_ranking[i], comp_ranking_index[i])
+                has_similar_index = a_b_similar_pair in similar_index_pairs or b_a_similar_pair in similar_index_pairs
+                if has_similar_index:
+                    is_equivalent = True
+            equivalents.append(is_equivalent)
+
         return not all(equivalents)
+
+    def create_similar_indexes_pairs_from_scores(self, ranking_scores, decimal_places=3):
+        rounded_scores = [round(s, decimal_places) for s in ranking_scores]
+
+        similar_indexes_pairs = set()
+        for i in range(len(rounded_scores)):
+            score = rounded_scores[i]
+            for j in range(len(rounded_scores)):
+                if i <= j:
+                    continue
+                other_score = rounded_scores[j]
+                if score == other_score:
+                    similar_indexes_pairs.add((i, j))
+
+        return similar_indexes_pairs
+
+
+    def create_valid_similar_indexes_from_ranking_scores(self, ranking_scores):
+        similar_indexes_pairs = self.create_similar_indexes_pairs_from_scores(
+            ranking_scores, decimal_places=self.similarity_rounding_places)
+
+        valid_pairs = []
+        for similar_index_pair in similar_indexes_pairs:
+            reversed_similar_index_pair = tuple(reversed(similar_index_pair))
+            is_valid = similar_index_pair in self.expected_similar_indexes_pairs or reversed_similar_index_pair in self.expected_similar_indexes_pairs
+            if is_valid:
+                valid_pairs.append(similar_index_pair)
+        return valid_pairs
+
 
     def compare_event(self, event_data):
         slr_profile = list(event_data['slr_profiles'].values())[0]
         ranking_index = slr_profile['ranking_index']
         ranking_scores = slr_profile['ranking_scores']
+        has_contradiction_on_any = self.has_contradiction_on_ranking(ranking_index, best_only=False)
+        has_contradiction_on_best =  self.has_contradiction_on_ranking(ranking_index, best_only=True)
+
+
+        similar_has_contradiction_on_any = has_contradiction_on_any
+        similar_has_contradiction_on_best = has_contradiction_on_best
+
+        if has_contradiction_on_any:
+            similar_index_pairs = self.create_valid_similar_indexes_from_ranking_scores(ranking_scores)
+            similar_has_contradiction_on_any = self.has_contradiction_on_ranking(
+                ranking_index, best_only=False, similar_index_pairs=similar_index_pairs)
+            similar_has_contradiction_on_best = self.has_contradiction_on_ranking(
+                ranking_index, best_only=True, similar_index_pairs=similar_index_pairs)
+
 
         comparison_data = {
             'comp_ranking_index': ranking_index,
             'comp_ranking_scores': ranking_scores,
-            'has_contradiction_on_best': self.has_contradiction_on_ranking(ranking_index, best_only=True),
-            'has_contradiction_on_any': self.has_contradiction_on_ranking(ranking_index, best_only=False),
+            'exact':{
+                'has_contradiction_on_best': has_contradiction_on_best,
+                'has_contradiction_on_any': has_contradiction_on_any,
+            },
+            'similar':{
+                'has_contradiction_on_best': similar_has_contradiction_on_best,
+                'has_contradiction_on_any': similar_has_contradiction_on_any,
+            }
         }
+
         return comparison_data
 
     def export_event_to_jl_file(self, event_json, output_file):
