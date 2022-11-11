@@ -52,7 +52,7 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
     def compare_event(self, event_data):
         slr_profile = list(event_data['slr_profiles'].values())[0]
         ranking_index = slr_profile['ranking_index']
-        ranking_scores = slr_profile['ranking_index']
+        ranking_scores = slr_profile['ranking_scores']
 
         comparison_data = {
             'comp_ranking_index': ranking_index,
