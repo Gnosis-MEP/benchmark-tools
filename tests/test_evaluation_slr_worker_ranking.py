@@ -42,34 +42,56 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
             {
                 'comp_ranking_index': [0, 5, 1, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1],
-                'has_contradiction_on_best': False,
-                'has_contradiction_on_any': True,
+                'exact':{
+                    'has_contradiction_on_best': False,
+                    'has_contradiction_on_any': True,
+                },
+                'similar':{
+                    'has_contradiction_on_best': False,
+                    'has_contradiction_on_any': True,
+                }
             },
             {
                 'comp_ranking_index': [1, 5, 0, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [3, 3, 3,  3, 3, 3, 3, 3, 3,  3, 3, 3],
-                'has_contradiction_on_best': True,
-                'has_contradiction_on_any': True,
+                'exact':{
+                    'has_contradiction_on_best': True,
+                    'has_contradiction_on_any': True,
+                },
+                'similar':{
+                    'has_contradiction_on_best': True,
+                    'has_contradiction_on_any': True,
+                }
             },
             {
                 'comp_ranking_index': [0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [2, 2, 2,  2, 2, 2, 2, 2, 2,  2, 2, 2],
-                'has_contradiction_on_best': False,
-                'has_contradiction_on_any': False,
+                'exact':{
+                    'has_contradiction_on_best': False,
+                    'has_contradiction_on_any': True,
+                },
+                'similar':{
+                    'has_contradiction_on_best': False,
+                    'has_contradiction_on_any': False,
+                }
             }
         ]
 
         ret = self.evaluation.calculate_metrics()
 
         expedted_res = {
-            'c_rate_any': 0.666,
-            'c_rate_best': 0.333,
+            'exact_c_rate_best': 0.333,
+            'exact_c_rate_any': 1,
+            'similar_c_rate_best': 0.333,
+            'similar_c_rate_any': 0.666,
             'total_events': 3,
             'avg_rankings_scores':  [2.0, 2.0, 2.0,  2.0, 2.0, 2.0, 2.0, 2.0, 2.0,  2.0, 2.0, 2.0],
         }
 
-        self.assertAlmostEqual(ret['c_rate_any'], expedted_res['c_rate_any'], places=2)
-        self.assertAlmostEqual(ret['c_rate_best'], expedted_res['c_rate_best'], places=2)
+        self.assertAlmostEqual(ret['exact_c_rate_any'], expedted_res['exact_c_rate_any'], places=2)
+        self.assertAlmostEqual(ret['exact_c_rate_best'], expedted_res['exact_c_rate_best'], places=2)
+        self.assertAlmostEqual(ret['similar_c_rate_any'], expedted_res['similar_c_rate_any'], places=2)
+        self.assertAlmostEqual(ret['similar_c_rate_best'], expedted_res['similar_c_rate_best'], places=2)
         self.assertEqual(ret['total_events'], expedted_res['total_events'])
         self.assertListEqual(ret['avg_rankings_scores'], expedted_res['avg_rankings_scores'])
 

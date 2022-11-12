@@ -153,21 +153,22 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         self.events_compared.append(self.compare_event(event_data))
         self.export_event_to_jl_file(event_json, output_file)
 
-    def calculate_metrics(self):
+    def get_contradiction_rates(self, is_exact=True):
         c_rate_best = 0
         c_rate_any = 0
         total = len(self.events_compared)
         avg_rankings_scores = []
-        for comp_result in self.events_compared:
+        for comp_result_dict in self.events_compared:
+            comp_result = comp_result_dict['exact'] if is_exact else comp_result_dict['similar']
             if comp_result['has_contradiction_on_best']:
                 c_rate_best += 1
 
             if comp_result['has_contradiction_on_any']:
                 c_rate_any += 1
             if len(avg_rankings_scores) == 0:
-                avg_rankings_scores = comp_result['comp_ranking_scores']
+                avg_rankings_scores = comp_result_dict['comp_ranking_scores']
             else:
-                for alt_index, ranking_score in enumerate(comp_result['comp_ranking_scores']):
+                for alt_index, ranking_score in enumerate(comp_result_dict['comp_ranking_scores']):
                     avg_rankings_scores[alt_index] += ranking_score
 
 
@@ -178,10 +179,19 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
             for alt_index in range(len(avg_rankings_scores)):
                 avg_rankings_scores[alt_index] = avg_rankings_scores[alt_index] / total
 
+        return c_rate_best, c_rate_any, avg_rankings_scores.copy()
+
+
+    def calculate_metrics(self):
+        total = len(self.events_compared)
+        exact_c_rate_best, exact_c_rate_any, avg_rankings_scores  = self.get_contradiction_rates(is_exact=True)
+        similar_c_rate_best,similar_c_rate_any, _  = self.get_contradiction_rates(is_exact=False)
         results = {
             'total_events': total,
-            'c_rate_best': c_rate_best,
-            'c_rate_any': c_rate_any,
+            'exact_c_rate_best': exact_c_rate_best,
+            'exact_c_rate_any': exact_c_rate_any,
+            'similar_c_rate_best': similar_c_rate_best,
+            'similar_c_rate_any': similar_c_rate_any,
             'avg_rankings_scores': avg_rankings_scores,
         }
         return results
