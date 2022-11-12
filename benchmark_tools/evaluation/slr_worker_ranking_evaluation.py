@@ -203,12 +203,15 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         return self.verify_thresholds(results)
 
 
-def run(redis_address, redis_port, stream_key, expected_ranking_index, threshold_functions, logging_level):
+def run(redis_address, redis_port, stream_key, expected_ranking_index, expected_ranking_scores, similarity_rounding_places, output_path, threshold_functions, logging_level):
     stream_factory = RedisStreamFactory(host=redis_address, port=redis_port, block=1)
     evaluation = SLRWorkerRankingEvaluation(
         stream_factory=stream_factory,
         stream_key=stream_key,
         expected_ranking_index=expected_ranking_index,
+        expected_ranking_scores=expected_ranking_scores,
+        similarity_rounding_places=similarity_rounding_places,
+        output_path=output_path,
         threshold_functions=threshold_functions,
         logging_level=logging_level
     )
