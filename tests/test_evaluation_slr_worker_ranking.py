@@ -36,10 +36,9 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         self.assertTrue(mocked_read.called)
 
     def test_calculate_metrics_should_return_correctly(self):
-
-        mocked_comparison = {'some': 'comparison'}
-        self.evaluation.events_compared = [
-            {
+        self.evaluation.events_compared = [0, 1, 2] # mocked
+        self.evaluation.profiles_compared = {
+            'ObjectDetection-0.7-0.7-0.3': {
                 'comp_ranking_index': [0, 5, 1, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [1, 1, 1,  1, 1, 1, 1, 1, 1,  1, 1, 1],
                 'exact':{
@@ -51,7 +50,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
                     'has_contradiction_on_any': True,
                 }
             },
-            {
+            'ObjectDetection-0.7-0.7-0.2': {
                 'comp_ranking_index': [1, 5, 0, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [3, 3, 3,  3, 3, 3, 3, 3, 3,  3, 3, 3],
                 'exact':{
@@ -63,7 +62,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
                     'has_contradiction_on_any': True,
                 }
             },
-            {
+            'ObjectDetection-0.7-0.7-0.1': {
                 'comp_ranking_index': [0, 1, 5, 11, 6, 7, 2, 3, 4, 10, 8, 9],
                 'comp_ranking_scores': [2, 2, 2,  2, 2, 2, 2, 2, 2,  2, 2, 2],
                 'exact':{
@@ -75,7 +74,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
                     'has_contradiction_on_any': False,
                 }
             }
-        ]
+        }
 
         ret = self.evaluation.calculate_metrics()
 
@@ -85,6 +84,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
             'similar_c_rate_best': 0.333,
             'similar_c_rate_any': 0.666,
             'total_events': 3,
+            'total_profiles': 3,
             'avg_rankings_scores':  [2.0, 2.0, 2.0,  2.0, 2.0, 2.0, 2.0, 2.0, 2.0,  2.0, 2.0, 2.0],
         }
 
@@ -93,6 +93,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
         self.assertAlmostEqual(ret['similar_c_rate_any'], expedted_res['similar_c_rate_any'], places=2)
         self.assertAlmostEqual(ret['similar_c_rate_best'], expedted_res['similar_c_rate_best'], places=2)
         self.assertEqual(ret['total_events'], expedted_res['total_events'])
+        self.assertEqual(ret['total_profiles'], expedted_res['total_profiles'])
         self.assertListEqual(ret['avg_rankings_scores'], expedted_res['avg_rankings_scores'])
 
     @patch('benchmark_tools.evaluation.slr_worker_ranking_evaluation.SLRWorkerRankingEvaluation.export_event_to_jl_file')
@@ -170,7 +171,7 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
                 self.evaluation.has_contradiction_on_ranking(ranking_index=similar_index, best_only=True, similar_index_pairs=similar_index_pairs)
             )
 
-    def test_compare_event_returns_correctly(self):
+    def test_compare_event_should_create_correct_data_structures(self):
         event_data = {
             "service_type": "ObjectDetection",
             "slr_profiles":{
@@ -197,41 +198,63 @@ class SLRWorkerRankingTestCase(unittest.TestCase):
             }
         }
         ret = self.evaluation.compare_event(event_data)
+        self.assertDictEqual(ret, event_data)
+        self.assertIn("ObjectDetection-0.7-0.7-0.3", self.evaluation.profiles_compared.keys())
+
+    def test_compare_profile_returns_correctly(self):
+        slr_profile_id = 'ObjectDetection-0.7-0.7-0.3'
+        slr_profile = {
+            "query_ids": ["f817a712e1906879abade4f3ac893d0e"],
+            "criteria_weights": [0.7, 0.7, 0.3],
+            "alternatives_ids": [
+                "worker-000-data",
+                "worker-001-data",
+                "worker-002-data",
+                "worker-003-data",
+                "worker-004-data",
+                "worker-005-data",
+                "worker-006-data",
+                "worker-007-data",
+                "worker-008-data",
+                "worker-009-data",
+                "worker-010-data",
+                "worker-011-data"
+            ],
+            "ranking_index": [0, 1, 6, 7, 8, 5, 11, 10, 2, 3, 4, 9],
+            "ranking_scores": [0.850, 0.850, 0.227, 0.227, 0.227, 0.260, 0.739, 0.739, 0.316, 0.138, 0.238, 0.256]
+        }
+        ret = self.evaluation.compare_profile(slr_profile_id, slr_profile)
         self.assertEqual(ret['comp_ranking_index'], [0, 1, 6, 7, 8, 5, 11, 10, 2, 3, 4, 9])
         self.assertEqual(ret['exact']['has_contradiction_on_best'], False)
         self.assertEqual(ret['exact']['has_contradiction_on_any'], True)
 
-    def test_compare_event_returns_correctly_similarity_as_well(self):
-        event_data = {
-            "service_type": "ObjectDetection",
-            "slr_profiles":{
-                "ObjectDetection-0.7-0.7-0.3": {
-                    "query_ids": ["f817a712e1906879abade4f3ac893d0e"],
-                    "criteria_weights": [0.7, 0.7, 0.3],
-                    "alternatives_ids": [
-                        "worker-000-data",
-                        "worker-001-data",
-                        "worker-002-data",
-                        "worker-003-data",
-                        "worker-004-data",
-                        "worker-005-data",
-                        "worker-006-data",
-                        "worker-007-data",
-                        "worker-008-data",
-                        "worker-009-data",
-                        "worker-010-data",
-                        "worker-011-data"
-                    ],
-                    "ranking_index": [0, 1, 2, 3],
-                    "ranking_scores": [0.850, 0.850, 0.850, 0.850]
-                }
-            }
+    def test_compare_profile_returns_correctly_similarity_as_well(self):
+        slr_profile_id = 'ObjectDetection-0.7-0.7-0.3'
+        slr_profile = {
+            "query_ids": ["f817a712e1906879abade4f3ac893d0e"],
+            "criteria_weights": [0.7, 0.7, 0.3],
+            "alternatives_ids": [
+                "worker-000-data",
+                "worker-001-data",
+                "worker-002-data",
+                "worker-003-data",
+                "worker-004-data",
+                "worker-005-data",
+                "worker-006-data",
+                "worker-007-data",
+                "worker-008-data",
+                "worker-009-data",
+                "worker-010-data",
+                "worker-011-data"
+            ],
+            "ranking_index": [0, 1, 2, 3],
+            "ranking_scores": [0.850, 0.850, 0.850, 0.850]
         }
         self.evaluation.expected_ranking_index = [1, 0, 3, 2]
         self.evaluation.expected_ranking_scores = [0.5, 0.5, 0.2, 0.1]
         self.evaluation.expected_similar_indexes_pairs = set([(0, 1)])
 
-        ret = self.evaluation.compare_event(event_data)
+        ret = self.evaluation.compare_profile(slr_profile_id, slr_profile)
         self.assertEqual(ret['comp_ranking_index'], [0, 1, 2, 3])
         self.assertEqual(ret['comp_ranking_scores'], [0.850, 0.850, 0.850, 0.850])
         self.assertEqual(ret['exact']['has_contradiction_on_best'], True)

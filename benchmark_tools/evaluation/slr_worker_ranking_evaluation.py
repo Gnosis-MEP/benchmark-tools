@@ -29,6 +29,7 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
         # }]
         # self.comparison_eval_by_field_paths = kwargs['event_field_comparison_paths']
         self.events_compared = []
+        self.profiles_compared = {}
 
     def read_and_process_all_stream_by_key(self, stream_key, output_file):
         stream = self.stream_factory.create(
@@ -102,9 +103,9 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
                 valid_pairs.append(similar_index_pair)
         return valid_pairs
 
-
-    def compare_event(self, event_data):
-        slr_profile = list(event_data['slr_profiles'].values())[0]
+    def compare_profile(self, slr_profile_id, slr_profile):
+        if slr_profile_id in self.profiles_compared.keys():
+            return None
         ranking_index = slr_profile['ranking_index']
         ranking_scores = slr_profile['ranking_scores']
         has_contradiction_on_any = self.has_contradiction_on_ranking(ranking_index, best_only=False)
@@ -137,6 +138,13 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
 
         return comparison_data
 
+    def compare_event(self, event_data):
+        for slr_profile_id, slr_profile in event_data['slr_profiles'].items():
+            comparison_data = self.compare_profile(slr_profile_id, slr_profile)
+            if comparison_data is not None:
+                self.profiles_compared[slr_profile_id] = comparison_data
+        return event_data
+
     def export_event_to_jl_file(self, event_json, output_file):
         with open(output_file, 'a') as f:
             f.write(event_json + '\n')
@@ -156,9 +164,9 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
     def get_contradiction_rates(self, is_exact=True):
         c_rate_best = 0
         c_rate_any = 0
-        total = len(self.events_compared)
+        total = len(self.profiles_compared.keys())
         avg_rankings_scores = []
-        for comp_result_dict in self.events_compared:
+        for comp_result_dict in self.profiles_compared.values():
             comp_result = comp_result_dict['exact'] if is_exact else comp_result_dict['similar']
             if comp_result['has_contradiction_on_best']:
                 c_rate_best += 1
@@ -183,11 +191,13 @@ class SLRWorkerRankingEvaluation(BaseEvaluation):
 
 
     def calculate_metrics(self):
-        total = len(self.events_compared)
+        total_events = len(self.events_compared)
+        total_profiles = len(self.profiles_compared)
         exact_c_rate_best, exact_c_rate_any, avg_rankings_scores  = self.get_contradiction_rates(is_exact=True)
         similar_c_rate_best,similar_c_rate_any, _  = self.get_contradiction_rates(is_exact=False)
         results = {
-            'total_events': total,
+            'total_events': total_events,
+            'total_profiles': total_profiles,
             'exact_c_rate_best': exact_c_rate_best,
             'exact_c_rate_any': exact_c_rate_any,
             'similar_c_rate_best': similar_c_rate_best,
