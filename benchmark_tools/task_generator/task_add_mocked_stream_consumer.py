@@ -18,6 +18,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
 
     def __init__(self, *args, **kwargs):
         super(TaskAddBackgroundMockedStreamConsumer, self).__init__(*args, **kwargs)
+        self.ack_data_stream_events = True
         self.stream_factory = kwargs['stream_factory']
         self.tracer_configs = kwargs['tracer_configs']
         self.tracer = None
@@ -101,10 +102,14 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
             for event_tuple in event_list:
                 event_id, json_msg = event_tuple
                 time_before_deserialization = datetime.datetime.now().timestamp()
-                event_data = self.default_event_deserializer(json_msg)
-                self.process_data_event_wrapper(event_data, json_msg, processing_time, time_before_deserialization)
-                total_events += 1
-                self.logger.debug(f'Consumed new event: {json_msg}')
+                try:
+                    event_data = self.default_event_deserializer(json_msg)
+                    self.process_data_event_wrapper(event_data, json_msg, processing_time, time_before_deserialization)
+                    total_events += 1
+                    self.logger.debug(f'Consumed new event: {json_msg}')
+                finally:
+                    if self.ack_data_stream_events:
+                        stream.ack(event_id)
 
             total_time = datetime.datetime.now().timestamp() - init_time.timestamp()
         self.logger.info(
