@@ -2,6 +2,7 @@ version: '2.3'
 services:
   benchmark-tools:
     image: registry.insight-centre.org/sit/mps/benchmark-tools:master
+    working_dir: /service
     command: python /service/benchmark_tools/controller/controller.py
     build:
       context: '.'
