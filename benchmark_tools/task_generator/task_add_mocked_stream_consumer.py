@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import random
 import datetime
 import json
 from multiprocessing import Process
@@ -58,14 +59,19 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 scope.span.set_tag(tag, value)
             method(*method_args, **method_kwargs)
 
-    def process_data_event(self, event_data, json_msg, processing_time, time_before_deserialization):
+    def get_delta_variation(self, variation):
+        return (random.randint(-100, 100) / 100) * variation
+
+    def process_data_event(self, event_data, json_msg, processing_time, variation, time_before_deserialization):
         current_processing_time = datetime.datetime.now().timestamp() - time_before_deserialization
+        if variation != 0:
+            processing_time += self.get_delta_variation(variation)
         missing_processing_time = processing_time - current_processing_time
         if missing_processing_time > 0:
             time.sleep(missing_processing_time)
         # this is a fake method
 
-    def process_data_event_wrapper(self, event_data, json_msg, processing_time, time_before_deserialization):
+    def process_data_event_wrapper(self, event_data, json_msg, processing_time, variation, time_before_deserialization):
         self.event_trace_for_method_with_event_data(
             method=self.process_data_event,
             method_args=(),
@@ -73,6 +79,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 'event_data': event_data,
                 'json_msg': json_msg,
                 'processing_time': processing_time,
+                'variation': variation,
                 'time_before_deserialization': time_before_deserialization,
             },
             get_event_tracer=True,
@@ -88,7 +95,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
         event_data = json.loads(event_json)
         return event_data
 
-    def consume_events(self, stream_key, processing_time, max_time):
+    def consume_events(self, stream_key, processing_time, max_time, variation):
         self.tracer = init_tracer('MockedStreamConsumer', **self.tracer_configs)
 
         stream = self.stream_factory.create(
@@ -104,7 +111,7 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 time_before_deserialization = datetime.datetime.now().timestamp()
                 try:
                     event_data = self.default_event_deserializer(json_msg)
-                    self.process_data_event_wrapper(event_data, json_msg, processing_time, time_before_deserialization)
+                    self.process_data_event_wrapper(event_data, json_msg, processing_time, variation, time_before_deserialization)
                     total_events += 1
                     self.logger.debug(f'Consumed new event: {json_msg}')
                 finally:
@@ -118,10 +125,10 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
             f' Time for each event: expected={processing_time} real={total_time/total_events}.'
         )
 
-    def background_consume_events(self, stream_key, processing_time, max_time):
+    def background_consume_events(self, stream_key, processing_time, max_time, variation):
         pub_sub_proc = Process(
             target=self.consume_events,
-            args=(stream_key, processing_time, max_time),
+            args=(stream_key, processing_time, max_time, variation),
             daemon=True
         )
         pub_sub_proc.start()
@@ -135,11 +142,12 @@ class TaskAddBackgroundMockedStreamConsumer(BaseTask):
                 stream_key = action_data['stream_key']
                 processing_time = action_data['processing_time']
                 max_time = action_data['max_time']
+                variation = action_data.get('variation', 0)
                 self.logger.info(
                     f'Consuming events from {stream_key} with a processing time of {processing_time} per event.'
                     f' With max_time={max_time}.'
                 )
-                self.background_consume_events(stream_key, processing_time, max_time)
+                self.background_consume_events(stream_key, processing_time, max_time, variation)
                 return True
         return False
 
