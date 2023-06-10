@@ -448,8 +448,8 @@ class WorkersSchedulingEvaluation(BaseEvaluation):
 
     def save_intermediary_data(self):
         self.base_results_df.to_csv(self.output_events_csv_file, index=False)
-        self.non_proc_base_results_df.to_csv(self.output_all_events_csv_file, index=False)
-        self.merged_df.to_csv(self.output_non_proc_events_csv_file, index=False)
+        self.non_proc_base_results_df.to_csv(self.output_non_proc_events_csv_file, index=False)
+        self.merged_df.to_csv(self.output_all_events_csv_file, index=False)
 
         with open(self.output_non_proc_events_json_file, 'w') as f:
             json.dump(self.non_proccessed_traces_by_workers, f, indent=4)
