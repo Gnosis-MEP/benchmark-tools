@@ -58,6 +58,7 @@ class WorkersSchedulingEvaluation(BaseEvaluation):
         self.non_proc_base_results_df = None
         self.max_workers_end_time = None
         self.non_proc_exp_time = 0
+        self.standby_kw_values = 0
 
     def get_traces(self):
         end_point = self.JAEGER_TRACES_URL_FORMAT.format(
@@ -230,12 +231,13 @@ class WorkersSchedulingEvaluation(BaseEvaluation):
 
         total_energy = 0
         if standby:
-            standby_kw_values = base_results_df.groupby(['worker_stream_key']).mean()['w_energy_consumption_standby'] / 1000
+            self.standby_kw_values = base_results_df.groupby(['worker_stream_key']).mean()['w_energy_consumption_standby'] / 1000
+
             standby_time_hour = (
                 total_time - base_results_df.groupby(['worker_stream_key']).sum()['processing_time_sec']
             ) / 3600
 
-            standby_kwh_values = standby_time_hour * standby_kw_values
+            standby_kwh_values = standby_time_hour * self.standby_kw_values
             total_energy = standby_kwh_values.sum()
         else:
             energy_kws_values = base_results_df.groupby(['worker_stream_key']).sum()['energy_consumption_w_s'] / 1000
@@ -387,6 +389,7 @@ class WorkersSchedulingEvaluation(BaseEvaluation):
             'latency_avg': latency_avg,
             'latency_std': latency_std,
             'experiment_time': self.experiment_time,
+            'standby_kw': self.standby_kw_values,
         }
 
         if self.max_workers_end_time is not None:
@@ -397,20 +400,13 @@ class WorkersSchedulingEvaluation(BaseEvaluation):
             final_results.update(non_proc_resuls)
         return final_results
 
-
     def calculate_results(self, traces):
-        print('get_base_results_data_frame')
         self.base_results_df = self.get_base_results_data_frame(traces)
-        print('get_non_processes_results_data_frame')
         self.non_proc_base_results_df = self.get_non_processes_results_data_frame()
-        print('get_final_results')
         final_results = self.get_final_results(self.base_results_df, self.non_proc_base_results_df)
-        print('done')
         return final_results
 
     def save_intermediary_data(self):
-        # self.output_events_csv_file = os.path.join(self.output_path, f'events_results.csv')
-        # self.output_non_proc_events_json_file = os.path.join(self.output_path, f'non_processed_events.json')
         self.base_results_df.to_csv(self.output_events_csv_file, index=False)
         self.non_proc_base_results_df.to_csv(self.output_non_proc_events_csv_file, index=False)
         with open(self.output_non_proc_events_json_file, 'w') as f:
