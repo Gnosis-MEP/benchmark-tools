@@ -1,0 +1,6 @@
+python-decouple==3.1
+requests==2.22.0
+numpy==1.19.5
+pandas==1.1.5
+event-service-utils
+-e file:./#egg=benchmark_tools
