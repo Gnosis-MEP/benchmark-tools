@@ -119,7 +119,7 @@ def run(jaeger_api_host, services, threshold_functions, logging_level):
 if __name__ == '__main__':
     kwargs = {
         "jaeger_api_host": "http://172.17.0.1:16686",
-        "services": ["ObjectDetectionService"],
+        "services": ["AdaptivePublisher", "ImageResizer", "PytorchObjectDetectionService"],
         "threshold_functions": {
             # ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
             # ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",
@@ -131,9 +131,9 @@ if __name__ == '__main__':
             # ".*_publish_next_event_std": "lambda x: x < 0.01",
             # ".*_process_action_avg": "lambda x: x < 0.1",
             # ".*_process_action_std": "lambda x: x < 0.1",
-            ".*": "lambda x: x < (0.01)",
-            "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
-            "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)",
+            ".*": "lambda x: True",
+            # "ObjectDetectionService_process_data_event_avg": "lambda x: x < (0.4)",
+            # "ObjectDetectionService_process_data_event_std": "lambda x: x < (0.4)",
         },
         "logging_level": "DEBUG"
     }

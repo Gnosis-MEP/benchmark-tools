@@ -57,19 +57,34 @@ def run(actions, jaeger_api_host, logging_level):
 
 
 if __name__ == '__main__':
-    output_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # output_path = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    # kwargs = {
+    #     "jaeger_api_host": "http://localhost:16686",
+    #     "logging_level": "DEBUG",
+    #     "actions": [
+    #         {
+    #             'action': 'exportTraces',
+    #             'service': 'PreProcessing',
+    #             'operation': 'publish_next_event',
+    #             'output_path': output_path,
+    #         }
+    #     ]
+    # }
+
+
     kwargs = {
-        "jaeger_api_host": "http://localhost:16686",
+        "jaeger_api_host": "http://172.17.0.1:16686",
         "logging_level": "DEBUG",
         "actions": [
             {
-                'action': 'exportTraces',
-                'service': 'PreProcessing',
-                'operation': 'publish_next_event',
-                'output_path': output_path,
+                "action": "exportTraces",
+                "service": "AdaptivePublisher",
+                "operation": "process_next_frame",
+                "output_path": "/service/outputs"
             }
         ]
     }
+
     print(run(**kwargs))
 
 # if __name__ == '__main__':
