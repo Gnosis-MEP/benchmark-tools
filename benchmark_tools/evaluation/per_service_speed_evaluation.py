@@ -64,7 +64,7 @@ class PerServiceSpeedEvaluation(BaseEvaluation):
         return traces
 
     def get_traces_from_file(self, service):
-        with open('./ObjectDetectionService-process_data_event.json', 'r') as f:
+        with open('....e2e_early_filtering_pipeline/AnyCars/cloudseg/AdaptivePublisher-process_next_frame.json', 'r') as f:
             return json.load(f)['data']
 
     def get_services(self):
@@ -82,7 +82,6 @@ class PerServiceSpeedEvaluation(BaseEvaluation):
         return services
 
     def calculate_service_operations_latency_metrics(self, traces, service):
-
         self.logger.debug(f'Total event traces being analysed: {len(traces)} ')
         latencies = [self.get_trace_latency(trace) for trace in traces]
         latency_avg = self.calculate_average(latencies)
@@ -119,7 +118,7 @@ def run(jaeger_api_host, services, threshold_functions, logging_level):
 if __name__ == '__main__':
     kwargs = {
         "jaeger_api_host": "http://172.17.0.1:16686",
-        "services": ["AdaptivePublisher", "ImageResizer", "PytorchObjectDetectionService"],
+        "services": ["AdaptivePublisher", "ImageResizerService", "PytorchObjectDetectionService"],
         "threshold_functions": {
             # ".*_serialize_and_write_event_with_trace_avg": "lambda x: x < 0.02",
             # ".*_serialize_and_write_event_with_trace_std": "lambda x: x < 0.02",

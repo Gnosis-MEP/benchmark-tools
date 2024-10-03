@@ -12,7 +12,8 @@ services:
         SIT_PYPI_PASS_VAR: ${SIT_PYPI_PASS}
     # ports:
     #   - "8000:8000"
-    # volumes:
-    #   - ./outputs:/service/outputs
+    volumes:
+      - ./outputs:/service/outputs
+      - ./benchmark_tools:/service/benchmark_tools
     environment:
       - PYTHONUNBUFFERED=0
